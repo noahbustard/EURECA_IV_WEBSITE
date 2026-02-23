@@ -178,6 +178,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const [remainingUnits, setRemainingUnits] = useState(totalUnits);
   const [firstPushAt, setFirstPushAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [flowOn, setFlowOn] = useState(false);
 
   const complete = remainingUnits === 0;
 
@@ -187,10 +188,11 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     return () => clearInterval(id);
   }, [firstPushAt, complete]);
 
-  const totalSeconds = elapsedMs / 1000;
-  const seconds = Math.floor(totalSeconds % 60);
-  const minutes = Math.floor(totalSeconds / 60);
-  const sweepDeg = (totalSeconds % 60) * 6;
+  const triggerFlow = () => {
+    setFlowOn(false);
+    setTimeout(() => setFlowOn(true), 0);
+    setTimeout(() => setFlowOn(false), 280);
+  };
 
   useEffect(() => {
     onChange({ complete: false, elapsedSeconds: null });
@@ -205,6 +207,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
 
     const nextRemaining = Math.max(0, remainingUnits - 1);
     setRemainingUnits(nextRemaining);
+    triggerFlow();
 
     if (nextRemaining === 0) {
       const finalElapsedMs = performance.now() - start;
@@ -217,8 +220,14 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     setRemainingUnits(totalUnits);
     setFirstPushAt(null);
     setElapsedMs(0);
+    setFlowOn(false);
     onChange({ complete: false, elapsedSeconds: null });
   };
+
+  const totalSeconds = elapsedMs / 1000;
+  const seconds = Math.floor(totalSeconds % 60);
+  const minutes = Math.floor(totalSeconds / 60);
+  const sweepDeg = (totalSeconds % 60) * 6;
 
   const remainingMl = remainingUnits * STEP_ML;
   const majorStep = totalMl === 3 ? 0.5 : 1;
@@ -250,7 +259,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               const safeLabel = Number(labelValue.toFixed(1));
               return (
                 <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
-                  <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
+                  <div className={`ml-1 ${isMajor ? 'h-[2px] w-8 bg-zinc-700' : 'h-[1px] w-4 bg-zinc-500/80'}`} />
                   {isMajor && (
                     <span className="absolute left-10 -top-[6px] text-[9px] font-bold leading-none text-zinc-600">
                       {safeLabel === totalMl ? `${safeLabel}mL` : safeLabel}
@@ -263,7 +272,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
 
           <svg className="absolute left-0 top-0" width="120" height="458" viewBox="0 0 120 458" aria-hidden>
             <path
-              d="M5 333 L39 349 L46 390 L58 390 L65 349 L99 333"
+              d="M5 333 L44 357 L48 401 L56 401 L60 357 L99 333"
               fill="none"
               stroke="rgb(63 63 70)"
               strokeWidth="4"
@@ -272,6 +281,19 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             />
           </svg>
 
+          <div className="absolute left-1/2 top-[401px] h-8 w-[2px] -translate-x-1/2 bg-zinc-700" />
+          <div
+            className="absolute left-1/2 top-[401px] h-8 w-[2px] -translate-x-1/2 bg-yellow-300"
+            style={{
+              opacity: flowOn ? 1 : 0,
+              transform: flowOn ? 'translateY(10px)' : 'translateY(0px)',
+              transition: 'transform 260ms ease-out, opacity 260ms ease-out',
+            }}
+          />
+          <div
+            className="absolute left-1/2 top-[431px] h-[4px] w-[4px] -translate-x-1/2 rounded-full bg-yellow-300"
+            style={{ opacity: flowOn ? 1 : 0, transition: 'opacity 220ms ease-out' }}
+          />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
@@ -281,8 +303,8 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               const r = 64;
               const xBase = 80 + r * Math.cos((angle * Math.PI) / 180);
               const y = 80 + r * Math.sin((angle * Math.PI) / 180);
-              const label = i === 0 ? "60" : String(i * 5);
-              const x = i === 0 ? xBase - 2 : xBase;
+              const label = i === 0 ? '60' : String(i * 5);
+              const x = xBase;
               return (
                 <span
                   key={i}
@@ -295,7 +317,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             })}
             <div
               className="absolute h-[58px] w-[2px] rounded-full bg-gradient-to-t from-red-700 to-red-400"
-              style={{ left: "50%", bottom: "50%", transform: `translateX(-50%) rotate(${sweepDeg}deg)`, transformOrigin: "50% 100%" }}
+              style={{ left: '50%', bottom: '50%', transform: `translateX(-50%) rotate(${sweepDeg}deg)`, transformOrigin: '50% 100%' }}
             />
             <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-zinc-900" />
           </div>
@@ -305,7 +327,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
       <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-center shadow-inner">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">Time since first push</p>
         <p className="font-mono text-4xl font-bold tracking-wider text-emerald-300 [text-shadow:0_0_10px_rgba(52,211,153,0.45)]">
-          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </p>
       </div>
 
