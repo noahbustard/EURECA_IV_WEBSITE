@@ -223,16 +223,15 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const remainingMl = remainingUnits * STEP_ML;
   const filledPct = (remainingUnits / totalUnits) * 100;
   const majorStep = totalMl === 3 ? 0.5 : 1;
-  const pushedPct = 100 - filledPct;
 
   return (
     <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <h3 className="text-base font-semibold text-zinc-900">Syringe Infusion Trainer</h3>
 
-      <div className="mx-auto flex h-[480px] w-[300px] items-end justify-center gap-5">
-        <div className="relative h-[370px] w-[110px] rounded-[22px] border-4 border-zinc-300 bg-zinc-50 shadow-inner">
+      <div className="mx-auto flex h-[430px] w-[280px] items-end justify-center gap-4">
+        <div className="relative h-[340px] w-[108px] rounded-2xl border-4 border-zinc-300 bg-zinc-50 shadow-inner">
           <div
-            className="absolute bottom-0 left-0 right-0 rounded-b-[18px] bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-200"
+            className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
             style={{ height: `${filledPct}%` }}
           />
 
@@ -251,20 +250,8 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             );
           })}
 
-          <div
-            className="absolute left-1/2 top-1 h-[230px] w-[3px] -translate-x-1/2 rounded bg-zinc-400 transition-all duration-200"
-            style={{ transform: `translateX(-50%) translateY(${(pushedPct / 100) * 160}px)` }}
-          />
-          <div
-            className="absolute left-1/2 top-0 h-10 w-14 -translate-x-1/2 rounded-md border border-zinc-400 bg-zinc-100 shadow-sm transition-all duration-200"
-            style={{ transform: `translateX(-50%) translateY(${(pushedPct / 100) * 160}px)` }}
-          />
-
-          <div className="absolute -left-2 -right-2 -bottom-2 h-3 rounded-b-xl border-x-2 border-b-2 border-zinc-400 bg-zinc-100" />
-          <div className="absolute left-1/2 -bottom-12 h-10 w-[3px] -translate-x-1/2 rounded bg-zinc-400" />
-          <div className="absolute left-1/2 -bottom-16 h-5 w-[2px] -translate-x-1/2 bg-zinc-500" />
-          <div className="absolute left-1/2 -bottom-[74px] h-2 w-5 -translate-x-1/2 rounded-full border border-zinc-400 bg-zinc-100" />
-
+          <div className="absolute -bottom-11 left-1/2 h-11 w-4 -translate-x-1/2 rounded-b-md bg-zinc-400" />
+          <div className="absolute -top-8 left-1/2 h-8 w-16 -translate-x-1/2 rounded-t-md border border-zinc-400 bg-zinc-100" />
           <div className="absolute -right-10 top-1/2 -translate-y-1/2 rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white">mL</div>
         </div>
 
