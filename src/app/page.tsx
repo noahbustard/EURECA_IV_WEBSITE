@@ -241,7 +241,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               />
 
               {Array.from({ length: totalUnits + 1 }).map((_, i) => {
-                const y = 2 + (i / totalUnits) * 98;
+                const y = (i / totalUnits) * 100;
                 const labelValue = totalMl - i * STEP_ML;
                 const isZero = Math.abs(labelValue) < 1e-6;
                 if (isZero) return null;
@@ -251,7 +251,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
                   <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
                     <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
                     {isMajor && (
-                      <span className="absolute left-10 top-0 text-[10px] font-bold text-zinc-600">
+                      <span className="absolute left-10 -top-[7px] text-[10px] font-bold leading-none text-zinc-600">
                         {safeLabel === totalMl ? `${safeLabel}mL` : safeLabel}
                       </span>
                     )}
@@ -268,9 +268,10 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             {[...Array(12)].map((_, i) => {
               const angle = i * 30 - 90;
               const r = 64;
-              const x = 80 + r * Math.cos((angle * Math.PI) / 180);
+              const xBase = 80 + r * Math.cos((angle * Math.PI) / 180);
               const y = 80 + r * Math.sin((angle * Math.PI) / 180);
               const label = i === 0 ? "60" : String(i * 5);
+              const x = i === 0 ? xBase + 3 : xBase;
               return (
                 <span
                   key={i}
