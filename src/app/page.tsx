@@ -230,10 +230,11 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
 
       <div className="mx-auto flex h-[510px] w-[300px] items-end justify-center gap-4">
         <div className="relative h-[390px] w-[120px]">
-          <div className="absolute left-1/2 top-0 h-8 w-2 -translate-x-1/2 rounded bg-zinc-400" />
-          <div className="absolute left-1/2 top-7 h-10 w-12 -translate-x-1/2 rounded-md border border-zinc-400 bg-zinc-100 shadow-sm" />
+          <div className="absolute left-1/2 top-0 h-[2px] w-[112px] -translate-x-1/2 bg-zinc-500" />
+          <div className="absolute left-1/2 top-[2px] h-8 w-2 -translate-x-1/2 rounded bg-zinc-400" />
+          <div className="absolute left-1/2 top-8 h-10 w-10 -translate-x-1/2 rounded-md border border-zinc-400 bg-zinc-100 shadow-sm" />
 
-          <div className="absolute left-1/2 top-16 h-[286px] w-[100px] -translate-x-1/2 rounded-[22px] border-4 border-zinc-300 bg-zinc-50 shadow-inner">
+          <div className="absolute left-1/2 top-[52px] h-[286px] w-[100px] -translate-x-1/2 rounded-[22px] border-4 border-zinc-300 bg-zinc-50 shadow-inner">
             <div
               className="absolute bottom-0 left-0 right-0 rounded-b-[18px] bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
               style={{ height: `${filledPct}%` }}
