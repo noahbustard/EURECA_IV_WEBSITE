@@ -191,7 +191,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const triggerFlow = () => {
     setFlowOn(false);
     setTimeout(() => setFlowOn(true), 0);
-    setTimeout(() => setFlowOn(false), 320);
+    setTimeout(() => setFlowOn(false), 280);
   };
 
   useEffect(() => {
@@ -281,19 +281,19 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             />
           </svg>
 
+          <div className="absolute left-1/2 top-[401px] h-8 w-[2px] -translate-x-1/2 bg-zinc-700" />
           <div
-            className="absolute left-[48px] top-[357px] h-[44px] w-[12px] overflow-hidden"
-            style={{ clipPath: 'polygon(14% 0, 86% 0, 62% 100%, 38% 100%)' }}
-          >
-            <div
-              className="absolute left-0 right-0 top-[-24px] h-6 bg-yellow-300"
-              style={{
-                opacity: flowOn ? 1 : 0,
-                transform: flowOn ? 'translateY(52px)' : 'translateY(0px)',
-                transition: 'transform 320ms ease-out, opacity 260ms ease-out',
-              }}
-            />
-          </div>
+            className="absolute left-1/2 top-[401px] h-8 w-[2px] -translate-x-1/2 bg-yellow-300"
+            style={{
+              opacity: flowOn ? 1 : 0,
+              transform: flowOn ? 'translateY(10px)' : 'translateY(0px)',
+              transition: 'transform 260ms ease-out, opacity 260ms ease-out',
+            }}
+          />
+          <div
+            className="absolute left-1/2 top-[431px] h-[4px] w-[4px] -translate-x-1/2 rounded-full bg-yellow-300"
+            style={{ opacity: flowOn ? 1 : 0, transition: 'opacity 220ms ease-out' }}
+          />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
