@@ -241,7 +241,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               />
 
               {Array.from({ length: totalUnits + 1 }).map((_, i) => {
-                const y = (i / totalUnits) * 100;
+                const y = 2 + (i / totalUnits) * 98;
                 const labelValue = totalMl - i * STEP_ML;
                 const isZero = Math.abs(labelValue) < 1e-6;
                 if (isZero) return null;
@@ -251,7 +251,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
                   <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
                     <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
                     {isMajor && (
-                      <span className="absolute left-10 -top-2 text-[10px] font-bold text-zinc-600">
+                      <span className="absolute left-10 top-0 text-[10px] font-bold text-zinc-600">
                         {safeLabel === totalMl ? `${safeLabel}mL` : safeLabel}
                       </span>
                     )}
@@ -282,8 +282,8 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               );
             })}
             <div
-              className="absolute left-1/2 top-1/2 h-[58px] w-[3px] -translate-x-1/2 rounded-full bg-gradient-to-t from-red-700 to-red-400"
-              style={{ transform: `translate(-50%, -100%) rotate(${sweepDeg}deg)`, transformOrigin: "50% 100%" }}
+              className="absolute h-[58px] w-[2px] rounded-full bg-gradient-to-t from-red-700 to-red-400"
+              style={{ left: "50%", bottom: "50%", transform: `translateX(-50%) rotate(${sweepDeg}deg)`, transformOrigin: "50% 100%" }}
             />
             <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-zinc-900" />
           </div>
