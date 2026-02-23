@@ -191,7 +191,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const triggerFlow = () => {
     setFlowOn(false);
     setTimeout(() => setFlowOn(true), 0);
-    setTimeout(() => setFlowOn(false), 320);
+    setTimeout(() => setFlowOn(false), 620);
   };
 
   useEffect(() => {
@@ -286,11 +286,11 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             style={{ clipPath: 'polygon(14% 0, 86% 0, 62% 100%, 38% 100%)' }}
           >
             <div
-              className="absolute left-0 right-0 top-[-24px] h-6 bg-yellow-300"
+              className="absolute left-0 right-0 top-[-56px] h-[56px] bg-yellow-300"
               style={{
                 opacity: flowOn ? 1 : 0,
-                transform: flowOn ? 'translateY(52px)' : 'translateY(0px)',
-                transition: 'transform 320ms ease-out, opacity 260ms ease-out',
+                transform: flowOn ? 'translateY(100px)' : 'translateY(0px)',
+                transition: 'transform 560ms ease-out, opacity 320ms ease-out',
               }}
             />
           </div>
