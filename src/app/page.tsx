@@ -261,10 +261,21 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             })}
           </div>
 
-          <div className="absolute left-[2px] top-[332px] h-11 w-[4px] origin-top -rotate-[62deg] bg-zinc-700" />
-          <div className="absolute right-[2px] top-[332px] h-11 w-[4px] origin-top rotate-[62deg] bg-zinc-700" />
-          <div className="absolute left-[53px] top-[352px] h-9 w-[1px] bg-zinc-700" />
-          <div className="absolute left-[65px] top-[352px] h-9 w-[1px] bg-zinc-700" />
+          {/* Lower tip: flat vector luer-style connector */}
+          <div className="absolute left-[8px] top-[333px] h-[2px] w-[34px] origin-left rotate-[31deg] bg-zinc-700" />
+          <div className="absolute right-[8px] top-[333px] h-[2px] w-[34px] origin-right -rotate-[31deg] bg-zinc-700" />
+
+          <div className="absolute left-1/2 top-[349px] h-[22px] w-[18px] -translate-x-1/2 border-2 border-zinc-700 bg-zinc-50" />
+
+          <div className="absolute left-1/2 top-[369px] h-[10px] w-[24px] -translate-x-1/2 border-2 border-zinc-700 bg-zinc-50" />
+          <div className="absolute left-[46px] top-[372px] h-[2px] w-[4px] bg-zinc-700" />
+          <div className="absolute left-[70px] top-[372px] h-[2px] w-[4px] bg-zinc-700" />
+
+          <div
+            className="absolute left-1/2 top-[378px] h-[4px] w-[8px] -translate-x-1/2 bg-zinc-700"
+            style={{ clipPath: "polygon(20% 0, 80% 0, 100% 100%, 0 100%)" }}
+          />
+          <div className="absolute left-1/2 top-[381px] h-[44px] w-[1px] -translate-x-1/2 bg-zinc-700" />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
