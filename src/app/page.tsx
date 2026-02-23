@@ -264,7 +264,9 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
           <div className="absolute left-[3px] top-[332px] h-10 w-[4px] origin-top -rotate-[58deg] bg-zinc-700" />
           <div className="absolute right-[3px] top-[332px] h-10 w-[4px] origin-top rotate-[58deg] bg-zinc-700" />
 
-          <div className="absolute left-[38px] top-[352px] h-14 w-[28px] border-4 border-zinc-700 bg-zinc-50" />
+          <div className="absolute left-[38px] top-[352px] h-14 w-[4px] bg-zinc-700" />
+          <div className="absolute left-[62px] top-[352px] h-14 w-[4px] bg-zinc-700" />
+          <div className="absolute left-[38px] top-[406px] h-[4px] w-[28px] bg-zinc-700" />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
