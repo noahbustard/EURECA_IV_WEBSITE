@@ -179,7 +179,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const [firstPushAt, setFirstPushAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [flowOn, setFlowOn] = useState(false);
-  const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdIntervalRef = useMemo<{ current: ReturnType<typeof setInterval> | null }>(() => ({ current: null }), []);
 
   const complete = remainingUnits === 0;
 
