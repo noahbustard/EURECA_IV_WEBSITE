@@ -279,20 +279,6 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            <path
-              d="M5 333 L44 357 L48 401 L56 401 L60 357 L99 333"
-              fill="none"
-              stroke="rgb(253 224 71)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray="170"
-              strokeDashoffset={flowOn ? 0 : 170}
-              style={{
-                opacity: flowOn ? 1 : 0,
-                transition: 'stroke-dashoffset 280ms ease-out, opacity 120ms ease-out',
-              }}
-            />
           </svg>
 
           <div className="absolute left-1/2 top-[401px] h-8 w-[2px] -translate-x-1/2 bg-zinc-700" />
@@ -301,7 +287,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             style={{
               opacity: flowOn ? 1 : 0,
               transform: flowOn ? 'translateY(10px)' : 'translateY(0px)',
-              transition: 'transform 280ms ease-out, opacity 280ms ease-out',
+              transition: 'transform 260ms ease-out, opacity 260ms ease-out',
             }}
           />
           <div
