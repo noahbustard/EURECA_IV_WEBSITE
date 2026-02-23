@@ -264,10 +264,10 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
           <div className="absolute left-[3px] top-[332px] h-10 w-[4px] origin-top -rotate-[58deg] bg-zinc-700" />
           <div className="absolute right-[3px] top-[332px] h-10 w-[4px] origin-top rotate-[58deg] bg-zinc-700" />
 
-          <div className="absolute left-[38px] top-[356px] h-[2px] w-[28px] bg-zinc-700" />
-          <div className="absolute left-[38px] top-[356px] h-14 w-[2px] bg-zinc-700" />
-          <div className="absolute left-[64px] top-[356px] h-14 w-[2px] bg-zinc-700" />
-          <div className="absolute left-[38px] top-[410px] h-[2px] w-[28px] bg-zinc-700" />
+          <div className="absolute left-[38px] top-[362px] h-[2px] w-[28px] bg-zinc-700" />
+          <div className="absolute left-[38px] top-[362px] h-14 w-[2px] bg-zinc-700" />
+          <div className="absolute left-[64px] top-[362px] h-14 w-[2px] bg-zinc-700" />
+          <div className="absolute left-[38px] top-[416px] h-[2px] w-[28px] bg-zinc-700" />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
