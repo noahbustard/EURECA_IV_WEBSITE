@@ -271,7 +271,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
               const xBase = 80 + r * Math.cos((angle * Math.PI) / 180);
               const y = 80 + r * Math.sin((angle * Math.PI) / 180);
               const label = i === 0 ? "60" : String(i * 5);
-              const x = xBase;
+              const x = i === 0 ? xBase - 2 : xBase;
               return (
                 <span
                   key={i}
