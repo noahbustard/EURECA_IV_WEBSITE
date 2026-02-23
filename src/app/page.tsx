@@ -331,9 +331,9 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             />
           </svg>
 
-          <div className="absolute left-1/2 top-[390px] h-8 w-[2px] -translate-x-[60%] bg-zinc-700" />
+          <div className="absolute left-1/2 top-[390px] h-8 w-[2px] -translate-x-[75%] bg-zinc-700" />
           <div
-            className="absolute left-1/2 top-[390px] h-8 w-[2px] -translate-x-[60%] bg-yellow-300"
+            className="absolute left-1/2 top-[390px] h-8 w-[2px] -translate-x-[75%] bg-yellow-300"
             style={{
               opacity: flowMode === 'idle' ? 0 : 1,
               transform: flowMode === 'idle' ? 'translateY(0px)' : 'translateY(10px)',
@@ -341,7 +341,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             }}
           />
           <div
-            className="absolute left-1/2 top-[420px] h-[4px] w-[4px] -translate-x-[60%] rounded-full bg-yellow-300"
+            className="absolute left-1/2 top-[420px] h-[4px] w-[4px] -translate-x-[75%] rounded-full bg-yellow-300"
             style={{ opacity: flowMode === 'idle' ? 0 : 1, transition: flowMode === 'click' ? 'opacity 420ms ease-out' : 'opacity 220ms linear' }}
           />
         </div>
