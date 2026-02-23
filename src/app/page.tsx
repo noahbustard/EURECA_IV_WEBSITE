@@ -179,6 +179,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const [firstPushAt, setFirstPushAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [flowOn, setFlowOn] = useState(false);
+  const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const complete = remainingUnits === 0;
 
@@ -187,6 +188,14 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     const id = setInterval(() => setElapsedMs(performance.now() - firstPushAt), 50);
     return () => clearInterval(id);
   }, [firstPushAt, complete]);
+
+  useEffect(() => {
+    if (complete) clearHold();
+  }, [complete]);
+
+  useEffect(() => {
+    return () => clearHold();
+  }, []);
 
   const triggerFlow = () => {
     setFlowOn(false);
@@ -199,24 +208,55 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const clearHold = () => {
+    if (holdIntervalRef.current) {
+      clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+  };
+
   const pushOne = () => {
-    if (remainingUnits <= 0) return;
+    let finished = false;
+    let finishElapsedMs = 0;
 
     const start = firstPushAt ?? performance.now();
     if (!firstPushAt) setFirstPushAt(start);
 
-    const nextRemaining = Math.max(0, remainingUnits - 1);
-    setRemainingUnits(nextRemaining);
-    triggerFlow();
+    setRemainingUnits((prev) => {
+      if (prev <= 0) return prev;
+      const next = Math.max(0, prev - 1);
+      triggerFlow();
 
-    if (nextRemaining === 0) {
-      const finalElapsedMs = performance.now() - start;
-      setElapsedMs(finalElapsedMs);
-      onChange({ complete: true, elapsedSeconds: Number((finalElapsedMs / 1000).toFixed(2)) });
+      if (next === 0) {
+        finished = true;
+        finishElapsedMs = performance.now() - start;
+      }
+      return next;
+    });
+
+    if (finished) {
+      clearHold();
+      setElapsedMs(finishElapsedMs);
+      onChange({ complete: true, elapsedSeconds: Number((finishElapsedMs / 1000).toFixed(2)) });
     }
   };
 
+  const startHoldPush = () => {
+    if (complete) return;
+    if (holdIntervalRef.current) return;
+
+    pushOne();
+    holdIntervalRef.current = setInterval(() => {
+      pushOne();
+    }, 140);
+  };
+
+  const stopHoldPush = () => {
+    clearHold();
+  };
+
   const reset = () => {
+    clearHold();
     setRemainingUnits(totalUnits);
     setFirstPushAt(null);
     setElapsedMs(0);
@@ -364,11 +404,16 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
 
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={pushOne}
+          onMouseDown={startHoldPush}
+          onMouseUp={stopHoldPush}
+          onMouseLeave={stopHoldPush}
+          onTouchStart={startHoldPush}
+          onTouchEnd={stopHoldPush}
+          onTouchCancel={stopHoldPush}
           disabled={complete}
           className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-40"
         >
-          Push 0.1 mL
+          Push 0.1 mL (hold)
         </button>
         <button
           onClick={reset}
