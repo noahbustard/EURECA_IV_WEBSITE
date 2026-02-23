@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Med = {
   name: string;
@@ -185,25 +185,37 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     return () => clearInterval(id);
   }, [firstPushAt, complete]);
 
-  useEffect(() => {
-    onChange({ complete, elapsedSeconds: complete ? Number((elapsedMs / 1000).toFixed(2)) : null });
-  }, [complete, elapsedMs, onChange]);
-
   const totalSeconds = elapsedMs / 1000;
   const seconds = Math.floor(totalSeconds % 60);
   const minutes = Math.floor(totalSeconds / 60);
   const sweepDeg = (totalSeconds % 60) * 6;
 
+  useEffect(() => {
+    onChange({ complete: false, elapsedSeconds: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pushOne = () => {
     if (remainingMl <= 0) return;
-    if (!firstPushAt) setFirstPushAt(performance.now());
-    setRemainingMl((v) => Math.max(0, v - 1));
+
+    const start = firstPushAt ?? performance.now();
+    if (!firstPushAt) setFirstPushAt(start);
+
+    const nextRemaining = Math.max(0, remainingMl - 1);
+    setRemainingMl(nextRemaining);
+
+    if (nextRemaining === 0) {
+      const finalElapsedMs = performance.now() - start;
+      setElapsedMs(finalElapsedMs);
+      onChange({ complete: true, elapsedSeconds: Number((finalElapsedMs / 1000).toFixed(2)) });
+    }
   };
 
   const reset = () => {
     setRemainingMl(totalMl);
     setFirstPushAt(null);
     setElapsedMs(0);
+    onChange({ complete: false, elapsedSeconds: null });
   };
 
   const filledPct = (remainingMl / totalMl) * 100;
@@ -212,26 +224,33 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <h3 className="text-base font-semibold text-zinc-900">Syringe Infusion Trainer</h3>
 
-      <div className="mx-auto flex h-80 w-[240px] items-end justify-center gap-4">
-        <div className="relative h-[280px] w-[96px] rounded-2xl border-4 border-zinc-300 bg-zinc-50 shadow-inner">
+      <div className="mx-auto flex h-80 w-[260px] items-end justify-center gap-4">
+        <div className="relative h-[290px] w-[108px] rounded-2xl border-4 border-zinc-300 bg-zinc-50 shadow-inner">
           <div
-            className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-yellow-300 transition-all duration-300"
+            className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
             style={{ height: `${filledPct}%` }}
           />
 
           {Array.from({ length: totalMl + 1 }).map((_, i) => {
-            const top = `${(i / totalMl) * 100}%`;
+            const y = (i / totalMl) * 100;
             const label = totalMl - i;
             return (
-              <div key={i} className="absolute left-0 right-0" style={{ top }}>
-                <div className="ml-1 h-[2px] w-5 bg-zinc-700" />
-                <span className="absolute -left-7 -top-2 text-[10px] font-bold text-zinc-600">{label}</span>
+              <div key={`major-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
+                <div className="ml-1 h-[2px] w-8 bg-zinc-700" />
+                <span className="absolute -left-8 -top-2 text-[10px] font-bold text-zinc-600">{label}</span>
               </div>
             );
           })}
 
-          <div className="absolute -bottom-10 left-1/2 h-10 w-3 -translate-x-1/2 rounded-b-md bg-zinc-400" />
-          <div className="absolute -top-8 left-1/2 h-8 w-14 -translate-x-1/2 rounded-t-md border border-zinc-400 bg-zinc-100" />
+          {Array.from({ length: totalMl * 5 + 1 }).map((_, i) => {
+            if (i % 5 === 0) return null;
+            const y = (i / (totalMl * 5)) * 100;
+            return <div key={`minor-${i}`} className="absolute left-0 ml-1 h-[1px] w-4 bg-zinc-500/80" style={{ top: `${y}%` }} />;
+          })}
+
+          <div className="absolute -bottom-11 left-1/2 h-11 w-4 -translate-x-1/2 rounded-b-md bg-zinc-400" />
+          <div className="absolute -top-8 left-1/2 h-8 w-16 -translate-x-1/2 rounded-t-md border border-zinc-400 bg-zinc-100" />
+          <div className="absolute -right-10 top-1/2 -translate-y-1/2 rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white">mL</div>
         </div>
 
         <div className="grid h-[260px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
@@ -261,9 +280,9 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
         </div>
       </div>
 
-      <div className="rounded-xl bg-zinc-50 p-3 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Time since first push</p>
-        <p className="font-mono text-3xl font-bold text-zinc-900">
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-center shadow-inner">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">Time since first push</p>
+        <p className="font-mono text-4xl font-bold tracking-wider text-emerald-300 [text-shadow:0_0_10px_rgba(52,211,153,0.45)]">
           {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
         </p>
       </div>
@@ -308,6 +327,13 @@ export default function Home() {
   const med = MEDS[index];
   const progress = useMemo(() => `${index + 1} / ${MEDS.length}`, [index]);
   const canAdvance = infusionByMed[index]?.complete ?? false;
+
+  const handleInfusionChange = useCallback(
+    (result: InfusionResult) => {
+      setInfusionByMed((prev) => ({ ...prev, [index]: result }));
+    },
+    [index],
+  );
 
   const toHome = () => {
     setShowRef(false);
@@ -419,11 +445,7 @@ export default function Home() {
         </section>
 
         <aside>
-          <InfusionPanel
-            key={index}
-            orderedAdminDose={med.orderedAdminDose}
-            onChange={(result) => setInfusionByMed((prev) => ({ ...prev, [index]: result }))}
-          />
+          <InfusionPanel key={index} orderedAdminDose={med.orderedAdminDose} onChange={handleInfusionChange} />
         </aside>
       </div>
 
