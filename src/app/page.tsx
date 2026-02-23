@@ -178,7 +178,6 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const [remainingUnits, setRemainingUnits] = useState(totalUnits);
   const [firstPushAt, setFirstPushAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [flowOn, setFlowOn] = useState(false);
 
   const complete = remainingUnits === 0;
 
@@ -187,12 +186,6 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     const id = setInterval(() => setElapsedMs(performance.now() - firstPushAt), 50);
     return () => clearInterval(id);
   }, [firstPushAt, complete]);
-
-  const triggerFlow = () => {
-    setFlowOn(false);
-    setTimeout(() => setFlowOn(true), 0);
-    setTimeout(() => setFlowOn(false), 620);
-  };
 
   useEffect(() => {
     onChange({ complete: false, elapsedSeconds: null });
@@ -207,7 +200,6 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
 
     const nextRemaining = Math.max(0, remainingUnits - 1);
     setRemainingUnits(nextRemaining);
-    triggerFlow();
 
     if (nextRemaining === 0) {
       const finalElapsedMs = performance.now() - start;
@@ -220,7 +212,6 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     setRemainingUnits(totalUnits);
     setFirstPushAt(null);
     setElapsedMs(0);
-    setFlowOn(false);
     onChange({ complete: false, elapsedSeconds: null });
   };
 
@@ -282,18 +273,9 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
           </svg>
 
           <div
-            className="absolute left-[48px] top-[357px] h-[44px] w-[12px] overflow-hidden"
+            className="absolute left-[48px] top-[357px] h-[44px] w-[12px] overflow-hidden bg-zinc-200"
             style={{ clipPath: 'polygon(14% 0, 86% 0, 62% 100%, 38% 100%)' }}
-          >
-            <div
-              className="absolute left-0 right-0 top-[-56px] h-[56px] bg-yellow-300"
-              style={{
-                opacity: flowOn ? 1 : 0,
-                transform: flowOn ? 'translateY(100px)' : 'translateY(0px)',
-                transition: 'transform 560ms ease-out, opacity 320ms ease-out',
-              }}
-            />
-          </div>
+          />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
