@@ -261,8 +261,11 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             })}
           </div>
 
-          <div className="absolute left-1/2 top-[333px] h-6 w-12 -translate-x-1/2 border-2 border-zinc-700 bg-zinc-50 [clip-path:polygon(8%_0,92%_0,74%_100%,26%_100%)]" />
-          <div className="absolute left-1/2 top-[356px] h-7 w-3 -translate-x-1/2 border-x-2 border-zinc-700 bg-zinc-50" />
+          <div
+            className="absolute left-1/2 top-[333px] h-6 w-12 -translate-x-1/2 border-2 border-zinc-700 bg-zinc-50"
+            style={{ clipPath: "polygon(10% 0, 90% 0, 72% 100%, 28% 100%)" }}
+          />
+          <div className="absolute left-1/2 top-[356px] h-7 w-[3px] -translate-x-1/2 bg-zinc-700" />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
