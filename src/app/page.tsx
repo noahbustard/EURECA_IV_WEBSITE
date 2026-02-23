@@ -306,7 +306,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
 
           <svg className="absolute left-0 top-0" width="120" height="458" viewBox="0 0 120 458" aria-hidden>
             <path
-              d="M5 333 L39 349 L46 390 L58 390 L65 349 L99 333"
+              d="M5 333 L90 349 L46 390 L58 390 L65 349 L99 333"
               fill="none"
               stroke="rgb(63 63 70)"
               strokeWidth="4"
