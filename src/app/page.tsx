@@ -221,8 +221,10 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   };
 
   const remainingMl = remainingUnits * STEP_ML;
-  const filledPct = (remainingUnits / totalUnits) * 100;
   const majorStep = totalMl === 3 ? 0.5 : 1;
+  const activeStartPct = 100 / 6;
+  const activeHeightPct = 100 - activeStartPct;
+  const filledPct = (remainingUnits / totalUnits) * activeHeightPct;
 
   return (
     <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -234,31 +236,29 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
           <div className="absolute left-1/2 top-[35px] h-14 w-[50px] -translate-x-1/2 border border-zinc-700 bg-zinc-100 shadow-sm" />
 
           <div className="absolute left-1/2 top-[48px] h-[286px] w-[100px] -translate-x-1/2 rounded-[8px] border-4 border-zinc-700 bg-zinc-50 shadow-inner">
-            <div className="absolute inset-x-0 bottom-0 h-[83.333%] overflow-hidden rounded-b-[4px]">
-              <div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
-                style={{ height: `${filledPct}%` }}
-              />
+            <div
+              className="absolute inset-x-0 bottom-0 rounded-b-[4px] bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
+              style={{ height: `${filledPct}%` }}
+            />
 
-              {Array.from({ length: totalUnits + 1 }).map((_, i) => {
-                const y = (i / totalUnits) * 100;
-                const labelValue = totalMl - i * STEP_ML;
-                const isZero = Math.abs(labelValue) < 1e-6;
-                if (isZero) return null;
-                const isMajor = Math.abs(labelValue / majorStep - Math.round(labelValue / majorStep)) < 1e-6;
-                const safeLabel = Number(labelValue.toFixed(1));
-                return (
-                  <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
-                    <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
-                    {isMajor && (
-                      <span className="absolute left-10 -top-[7px] text-[10px] font-bold leading-none text-zinc-600">
-                        {safeLabel === totalMl ? `${safeLabel}mL` : safeLabel}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {Array.from({ length: totalUnits + 1 }).map((_, i) => {
+              const y = activeStartPct + (i / totalUnits) * activeHeightPct;
+              const labelValue = totalMl - i * STEP_ML;
+              const isZero = Math.abs(labelValue) < 1e-6;
+              if (isZero) return null;
+              const isMajor = Math.abs(labelValue / majorStep - Math.round(labelValue / majorStep)) < 1e-6;
+              const safeLabel = Number(labelValue.toFixed(1));
+              return (
+                <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
+                  <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
+                  {isMajor && (
+                    <span className="absolute left-10 -top-[6px] text-[9px] font-bold leading-none text-zinc-600">
+                      {safeLabel === totalMl ? `${safeLabel}mL` : safeLabel}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
         </div>
