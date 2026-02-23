@@ -228,34 +228,42 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <h3 className="text-base font-semibold text-zinc-900">Syringe Infusion Trainer</h3>
 
-      <div className="mx-auto flex h-[430px] w-[280px] items-end justify-center gap-4">
-        <div className="relative h-[340px] w-[108px] rounded-2xl border-4 border-zinc-300 bg-zinc-50 shadow-inner">
-          <div
-            className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
-            style={{ height: `${filledPct}%` }}
-          />
+      <div className="mx-auto flex h-[510px] w-[300px] items-end justify-center gap-4">
+        <div className="relative h-[390px] w-[120px]">
+          <div className="absolute left-1/2 top-0 h-8 w-2 -translate-x-1/2 rounded bg-zinc-400" />
+          <div className="absolute left-1/2 top-7 h-10 w-12 -translate-x-1/2 rounded-md border border-zinc-400 bg-zinc-100 shadow-sm" />
 
-          {Array.from({ length: totalUnits + 1 }).map((_, i) => {
-            const y = (i / totalUnits) * 100;
-            const labelValue = totalMl - i * STEP_ML;
-            const isMajor = Math.abs((labelValue / majorStep) - Math.round(labelValue / majorStep)) < 1e-6;
-            const safeLabel = Number(labelValue.toFixed(1));
-            return (
-              <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
-                <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
-                {isMajor && (
-                  <span className="absolute -left-9 -top-2 text-[10px] font-bold text-zinc-600">{safeLabel}</span>
-                )}
-              </div>
-            );
-          })}
+          <div className="absolute left-1/2 top-16 h-[286px] w-[100px] -translate-x-1/2 rounded-[22px] border-4 border-zinc-300 bg-zinc-50 shadow-inner">
+            <div
+              className="absolute bottom-0 left-0 right-0 rounded-b-[18px] bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
+              style={{ height: `${filledPct}%` }}
+            />
 
-          <div className="absolute -bottom-11 left-1/2 h-11 w-4 -translate-x-1/2 rounded-b-md bg-zinc-400" />
-          <div className="absolute -top-8 left-1/2 h-8 w-16 -translate-x-1/2 rounded-t-md border border-zinc-400 bg-zinc-100" />
-          <div className="absolute -right-10 top-1/2 -translate-y-1/2 rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white">mL</div>
+            {Array.from({ length: totalUnits + 1 }).map((_, i) => {
+              const y = (i / totalUnits) * 100;
+              const labelValue = totalMl - i * STEP_ML;
+              const isMajor = Math.abs(labelValue / majorStep - Math.round(labelValue / majorStep)) < 1e-6;
+              const safeLabel = Number(labelValue.toFixed(1));
+              return (
+                <div key={`tick-${i}`} className="absolute left-0 right-0" style={{ top: `${y}%` }}>
+                  <div className={`ml-1 ${isMajor ? "h-[2px] w-8 bg-zinc-700" : "h-[1px] w-4 bg-zinc-500/80"}`} />
+                  {isMajor && (
+                    <span className="absolute -left-9 -top-2 text-[10px] font-bold text-zinc-600">{safeLabel}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="absolute left-1/2 top-[352px] h-4 w-[112px] -translate-x-1/2 rounded-b-xl border-x-2 border-b-2 border-zinc-400 bg-zinc-100" />
+          <div className="absolute left-1/2 top-[365px] h-10 w-[3px] -translate-x-1/2 rounded bg-zinc-400" />
+          <div className="absolute left-1/2 top-[404px] h-5 w-[2px] -translate-x-1/2 bg-zinc-500" />
+          <div className="absolute left-1/2 top-[408px] h-2 w-5 -translate-x-1/2 rounded-full border border-zinc-400 bg-zinc-100" />
+
+          <div className="absolute -right-8 top-[206px] rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white">mL</div>
         </div>
 
-        <div className="grid h-[260px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
+        <div className="grid h-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
           <div className="relative h-40 w-40 rounded-full border-2 border-zinc-300 bg-white">
             {[...Array(12)].map((_, i) => {
               const angle = i * 30 - 90;
