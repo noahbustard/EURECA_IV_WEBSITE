@@ -235,7 +235,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
           <div className="absolute left-1/2 top-[34px] h-[2px] w-[80px] -translate-x-1/2 bg-zinc-700" />
           <div className="absolute left-1/2 top-[35px] h-14 w-[50px] -translate-x-1/2 border border-zinc-700 bg-zinc-100 shadow-sm" />
 
-          <div className="absolute left-1/2 top-[48px] h-[286px] w-[100px] -translate-x-1/2 rounded-[8px] border-4 border-zinc-700 bg-zinc-50 shadow-inner">
+          <div className="absolute left-1/2 top-[48px] h-[286px] w-[100px] -translate-x-1/2 rounded-[3px] border-4 border-zinc-700 bg-zinc-50 shadow-inner">
             <div
               className="absolute inset-x-0 bottom-0 rounded-b-[4px] bg-gradient-to-t from-yellow-400 to-yellow-200 transition-all duration-300"
               style={{ height: `${filledPct}%` }}
@@ -261,8 +261,8 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             })}
           </div>
 
-          <div className="absolute left-[2px] top-[332px] h-8 w-[4px] origin-top -rotate-[56deg] bg-zinc-700" />
-          <div className="absolute right-[2px] top-[332px] h-8 w-[4px] origin-top rotate-[56deg] bg-zinc-700" />
+          <div className="absolute left-[2px] top-[332px] h-8 w-[4px] origin-top -rotate-[62deg] bg-zinc-700" />
+          <div className="absolute right-[2px] top-[332px] h-8 w-[4px] origin-top rotate-[62deg] bg-zinc-700" />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
