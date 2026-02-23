@@ -261,9 +261,12 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
             })}
           </div>
 
-          <svg className="absolute left-0 top-[332px]" width="120" height="82" viewBox="0 0 120 82" aria-hidden>
-            <path d="M3 2 L38 24 L38 78 L66 78 L66 24 L117 2" fill="none" stroke="rgb(63 63 70)" strokeWidth="4" strokeLinejoin="round" strokeLinecap="square" />
-          </svg>
+          <div className="absolute left-[3px] top-[332px] h-10 w-[4px] origin-top -rotate-[58deg] bg-zinc-700" />
+          <div className="absolute right-[3px] top-[332px] h-10 w-[4px] origin-top rotate-[58deg] bg-zinc-700" />
+
+          <div className="absolute left-[38px] top-[352px] h-14 w-[4px] bg-zinc-700" />
+          <div className="absolute left-[62px] top-[352px] h-14 w-[4px] bg-zinc-700" />
+          <div className="absolute left-[38px] top-[406px] h-[4px] w-[28px] bg-zinc-700" />
         </div>
 
         <div className="ml-3 grid h-[250px] w-[250px] place-items-center rounded-full border-[8px] border-zinc-200 bg-gradient-to-b from-white to-zinc-100 p-3 shadow-inner">
