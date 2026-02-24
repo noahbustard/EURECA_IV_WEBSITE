@@ -588,13 +588,20 @@ export default function Home() {
             <span className="rounded-full bg-blue-100 px-4 py-1 text-sm font-bold text-blue-700">{progress}</span>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-            <p className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Linked line</p>
-            <p className="mt-1 text-lg font-semibold text-zinc-900">{med.linkedLine}</p>
-            <p className="mt-3 text-base font-medium text-zinc-800">{med.name}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Linked line</p>
+              <p className="mt-1 text-base font-semibold text-zinc-900">{med.linkedLine}</p>
+              <p className="mt-2 text-sm font-medium text-zinc-800">{med.name}</p>
+            </div>
+
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Administration Instructions</p>
+              <p className="mt-2 text-zinc-900">{med.administrationInstructions || 'None listed'}</p>
+            </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <Info label="Ordered Admin Dose" value={med.orderedAdminDose} />
             <Info label="Concentration" value={med.concentration} />
             <Info label="Last Admin" value={med.lastAdmin} />
@@ -636,7 +643,7 @@ export default function Home() {
               Next Medication
             </button>
           </div>
-          {!canAdvance && <p className="mt-3 text-sm font-semibold text-amber-700">Complete syringe infusion to continue.</p>}
+          {!canAdvance && <p className="mt-2 text-sm font-semibold text-amber-700">Complete syringe infusion to continue.</p>}
         </section>
 
         <aside>
