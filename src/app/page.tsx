@@ -612,11 +612,6 @@ export default function Home() {
             <Info label="Order information" value="Administration Instructions" />
           </div>
 
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Administration Instructions</p>
-            <p className="mt-2 text-zinc-900">{med.administrationInstructions || "None listed"}</p>
-          </div>
-
           <div className="mt-8 flex flex-wrap gap-3">
             <button onClick={() => setShowRef(true)} className="rounded-2xl border border-emerald-300 bg-emerald-50 px-6 py-4 text-base font-bold text-emerald-800 hover:bg-emerald-100">
               Open Drug Reference
