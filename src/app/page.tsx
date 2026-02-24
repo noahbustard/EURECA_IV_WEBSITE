@@ -184,7 +184,9 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const totalUnits = Math.round(doseMl / STEP_ML);
   const [remainingUnits, setRemainingUnits] = useState(totalUnits);
   const [firstPushAt, setFirstPushAt] = useState<number | null>(null);
+  const [lastPushAt, setLastPushAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [nowMs, setNowMs] = useState(performance.now());
   const [flowMode, setFlowMode] = useState<'idle' | 'click' | 'hold'>('idle');
   const holdIntervalRef = useMemo<{ current: ReturnType<typeof setInterval> | null }>(() => ({ current: null }), []);
   const holdStartTimeoutRef = useMemo<{ current: ReturnType<typeof setTimeout> | null }>(() => ({ current: null }), []);
@@ -198,6 +200,11 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     const id = setInterval(() => setElapsedMs(performance.now() - firstPushAt), 50);
     return () => clearInterval(id);
   }, [firstPushAt, complete]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(performance.now()), 100);
+    return () => clearInterval(id);
+  }, []);
 
   const clearHold = () => {
     if (holdIntervalRef.current) {
@@ -222,10 +229,12 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     setRemainingUnits((prev) => {
       if (prev <= 0) return prev;
 
+      const pushedAt = performance.now();
+      setLastPushAt(pushedAt);
+
       if (firstPushRef.current === null) {
-        const startedAt = performance.now();
-        firstPushRef.current = startedAt;
-        setFirstPushAt(startedAt);
+        firstPushRef.current = pushedAt;
+        setFirstPushAt(pushedAt);
       }
 
       didPush = true;
@@ -297,6 +306,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     firstPushRef.current = null;
     setRemainingUnits(totalUnits);
     setFirstPushAt(null);
+    setLastPushAt(null);
     setElapsedMs(0);
     setFlowMode('idle');
     onChange({ complete: false, elapsedSeconds: null });
@@ -306,6 +316,15 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const seconds = Math.floor(totalSeconds % 60);
   const minutes = Math.floor(totalSeconds / 60);
   const sweepDeg = (totalSeconds % 60) * 6;
+
+  const completionMs = elapsedMs;
+  const sinceLastPushMs = lastPushAt ? Math.max(0, nowMs - lastPushAt) : 0;
+  const formatClock = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    const mm = Math.floor(s / 60);
+    const ss = s % 60;
+    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  };
 
   const remainingMl = remainingUnits * STEP_ML;
   const majorStep = vialMl === 3 ? 0.5 : 1;
@@ -435,10 +454,25 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-center shadow-inner">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">Time since first push</p>
-        <p className="font-mono text-4xl font-bold tracking-wider text-emerald-300 [text-shadow:0_0_10px_rgba(52,211,153,0.45)]">
-          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-        </p>
+        {!complete ? (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">Time since first push</p>
+            <p className="font-mono text-4xl font-bold tracking-wider text-emerald-300 [text-shadow:0_0_10px_rgba(52,211,153,0.45)]">
+              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+            </p>
+          </>
+        ) : (
+          <div className="space-y-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Since last push</p>
+              <p className="font-mono text-2xl font-bold tracking-wider text-emerald-300">{formatClock(sinceLastPushMs)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Completion time</p>
+              <p className="font-mono text-2xl font-bold tracking-wider text-cyan-300">{formatClock(completionMs)}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2">
