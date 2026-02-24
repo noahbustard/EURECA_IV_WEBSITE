@@ -192,6 +192,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const holdStartTimeoutRef = useMemo<{ current: ReturnType<typeof setTimeout> | null }>(() => ({ current: null }), []);
   const isHoldingRef = useMemo<{ current: boolean }>(() => ({ current: false }), []);
   const firstPushRef = useMemo<{ current: number | null }>(() => ({ current: null }), []);
+  const remainingUnitsRef = useMemo<{ current: number }>(() => ({ current: totalUnits }), [totalUnits]);
 
   const complete = remainingUnits === 0;
 
@@ -205,6 +206,10 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
     const id = setInterval(() => setNowMs(performance.now()), 100);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    remainingUnitsRef.current = remainingUnits;
+  }, [remainingUnits, remainingUnitsRef]);
 
   const clearHold = () => {
     if (holdIntervalRef.current) {
@@ -224,24 +229,20 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   };
 
   const pushOne = () => {
-    let didPush = false;
+    if (remainingUnitsRef.current <= 0) return false;
 
-    setRemainingUnits((prev) => {
-      if (prev <= 0) return prev;
+    const pushedAt = performance.now();
+    setLastPushAt(pushedAt);
 
-      const pushedAt = performance.now();
-      setLastPushAt(pushedAt);
+    if (firstPushRef.current === null) {
+      firstPushRef.current = pushedAt;
+      setFirstPushAt(pushedAt);
+    }
 
-      if (firstPushRef.current === null) {
-        firstPushRef.current = pushedAt;
-        setFirstPushAt(pushedAt);
-      }
-
-      didPush = true;
-      return Math.max(0, prev - 1);
-    });
-
-    return didPush;
+    const next = Math.max(0, remainingUnitsRef.current - 1);
+    remainingUnitsRef.current = next;
+    setRemainingUnits(next);
+    return true;
   };
 
   const startHoldPush = () => {
@@ -304,6 +305,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const reset = () => {
     clearHold();
     firstPushRef.current = null;
+    remainingUnitsRef.current = totalUnits;
     setRemainingUnits(totalUnits);
     setFirstPushAt(null);
     setLastPushAt(null);
