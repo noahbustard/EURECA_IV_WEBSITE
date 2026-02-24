@@ -318,7 +318,7 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const sweepDeg = (totalSeconds % 60) * 6;
 
   const completionMs = elapsedMs;
-  const sinceLastPushMs = lastPushAt ? Math.max(0, nowMs - lastPushAt) : 0;
+  const sinceFirstPushMs = firstPushAt ? Math.max(0, nowMs - firstPushAt) : 0;
   const formatClock = (ms: number) => {
     const s = Math.floor(ms / 1000);
     const mm = Math.floor(s / 60);
@@ -464,8 +464,8 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
         ) : (
           <div className="space-y-2">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Since last push</p>
-              <p className="font-mono text-2xl font-bold tracking-wider text-emerald-300">{formatClock(sinceLastPushMs)}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Since first push</p>
+              <p className="font-mono text-2xl font-bold tracking-wider text-emerald-300">{formatClock(sinceFirstPushMs)}</p>
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Completion time</p>
