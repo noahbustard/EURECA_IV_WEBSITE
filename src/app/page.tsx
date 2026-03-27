@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Med = {
   name: string;
@@ -31,6 +31,7 @@ type Participant = {
   age: string;
   gender: string;
   levelOfNursing: string;
+  areaOfNursing: string;
   yearsOfNursingExperience: string;
 };
 
@@ -43,12 +44,20 @@ type ExportRow = {
   age: string;
   gender: string;
   levelOfNursing: string;
+  areaOfNursing: string;
   yearsOfNursingExperience: string;
   medicationName: string;
   medicationAdministrationTimeSeconds: number;
   requiredMinimumSeconds: number;
   complianceStatus: ComplianceStatus;
+  additionalDrugInformationViewed: "Yes" | "No";
   completedAt: string;
+};
+
+type ConsentSection = {
+  title: string;
+  paragraphs?: string[];
+  bullets?: string[];
 };
 
 const GENDER_OPTIONS = ["Female", "Male", "Non-binary", "Prefer not to say"];
@@ -64,6 +73,79 @@ const NURSING_LEVEL_OPTIONS = [
   "Other",
   "Prefer not to say",
 ];
+
+const CONSENT_SECTIONS: ConsentSection[] = [
+  {
+    title: "Purpose of the study",
+    paragraphs: [
+      "You are invited to participate in a research study examining nurses decisions on intravenous (IV) medication infusion rates in a virtual simulation. The goal of this study is to evaluate a simulation tool designed to measure compliance with recommended IV medication infusion rates and to examine whether embedded alerts influence infusion decisions.",
+    ],
+  },
+  {
+    title: "What you will do",
+    bullets: [
+      "Complete a brief virtual simulation involving IV medication administration scenarios.",
+      "Select infusion rates for medications presented in the simulation.",
+      "Optionally complete a short demographic questionnaire, such as years of nursing experience or practice setting.",
+    ],
+    paragraphs: ["The simulation will take approximately 10-15 minutes to complete."],
+  },
+  {
+    title: "Risks",
+    paragraphs: [
+      "This study involves minimal risk. Some participants may experience mild discomfort if unsure about their answers. The simulation is for research purposes only and does not evaluate professional competence or job performance.",
+    ],
+  },
+  {
+    title: "Benefits",
+    paragraphs: [
+      "There may be no direct benefit to you. However, your participation may help improve nursing education tools and support research aimed at improving patient safety in IV medication administration.",
+    ],
+  },
+  {
+    title: "Confidentiality",
+    paragraphs: [
+      "Your responses will be recorded electronically and stored securely. No identifying information will be reported in research publications or presentations. Results will be reported in aggregate form only.",
+    ],
+  },
+  {
+    title: "Voluntary Participation",
+    paragraphs: ["Participation in this study is completely voluntary. You may stop at any time without penalty."],
+  },
+  {
+    title: "Questions",
+    paragraphs: [
+      "If you have questions about the study, contact Trinity Munoz, Wilson School of Nursing, Midwestern State University, tdmunoz0118@my.msutexas.edu.",
+      "You may also contact Dr. Robin Lockhart, Wilson School of Nursing, Midwestern State University, robin.lockhart@msutexas.edu.",
+    ],
+  },
+  {
+    title: "Consent",
+    paragraphs: ["By selecting I Agree, you confirm that:"],
+    bullets: [
+      "You are 18 years of age or older.",
+      "You are a licensed nurse.",
+      "You have read the information above.",
+      "You voluntarily agree to participate in this study.",
+    ],
+  },
+];
+
+const PRACTICE_MED: Med = {
+  name: "practice medication (DemoCaine) injection 5 mg IV once",
+  linkedLine: "Peripheral IV right forearm",
+  orderedAdminDose: "5 mg = 2 mL",
+  concentration: "2.5 mg/1 mL",
+  lastAdmin: "Today at 0800",
+  frequency: "Once",
+  route: "Intravenous",
+  orderedDose: "5 mg",
+  reason: "practice scenario",
+  administrationInstructions: "Administer over 2 minutes.",
+  referenceTitle: "Practice Medication Reference",
+  referenceBody: "This is a sample medication used for the practice run. Administer the 2 mL dose slowly over 2 minutes.",
+  requiredSeconds: 120,
+};
 
 const MEDS: Med[] = [
   {
@@ -225,6 +307,21 @@ function parseMl(dose: string) {
   return Math.max(1, Math.round(Number(match[1])));
 }
 
+function generateParticipantId() {
+  return `P${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+function createParticipant(): Participant {
+  return {
+    participantId: "",
+    age: "",
+    gender: "",
+    levelOfNursing: "",
+    areaOfNursing: "",
+    yearsOfNursingExperience: "",
+  };
+}
+
 function vialSizeForDose(doseMl: number) {
   if (doseMl <= 2) return 3;
   if (doseMl <= 4) return 5;
@@ -254,13 +351,8 @@ function formatSeconds(totalSeconds: number) {
 
 function validateParticipant(participant: Participant): ParticipantErrors {
   const errors: ParticipantErrors = {};
-  const participantId = participant.participantId.trim();
   const age = participant.age.trim();
   const yearsOfNursingExperience = participant.yearsOfNursingExperience.trim();
-
-  if (participantId && !/^[a-z0-9]+$/i.test(participantId)) {
-    errors.participantId = "Participant ID can include letters and numbers only.";
-  }
 
   if (age && !/^\d+$/.test(age)) {
     errors.age = "Age must be entered as a whole number.";
@@ -299,11 +391,13 @@ function rowsToCsv(rows: ExportRow[]) {
     "Age",
     "Gender",
     "Level Of Nursing",
+    "Area Of Nursing",
     "Years of Nursing Experience",
     "Medication",
     "Administration Time",
     "Required Minimum Administration Time",
     "Compliance Status",
+    "Viewed Additional Drug Information",
     "Completed At",
   ];
 
@@ -313,11 +407,13 @@ function rowsToCsv(rows: ExportRow[]) {
       row.age,
       row.gender,
       row.levelOfNursing,
+      row.areaOfNursing,
       row.yearsOfNursingExperience,
       row.medicationName,
       row.medicationAdministrationTimeSeconds,
       row.requiredMinimumSeconds,
       row.complianceStatus,
+      row.additionalDrugInformationViewed,
       row.completedAt,
     ]
       .map(csvEscape)
@@ -748,19 +844,21 @@ export default function Home() {
   const [index, setIndex] = useState(0);
   const [showRef, setShowRef] = useState(false);
   const [infusionByMed, setInfusionByMed] = useState<Record<number, InfusionResult>>({});
-  const [participant, setParticipant] = useState<Participant>({
-    participantId: "",
-    age: "",
-    gender: "",
-    levelOfNursing: "",
-    yearsOfNursingExperience: "",
-  });
+  const [referenceOpenedByMed, setReferenceOpenedByMed] = useState<Record<number, boolean>>({});
+  const [participant, setParticipant] = useState<Participant>(() => createParticipant());
   const [participantErrors, setParticipantErrors] = useState<ParticipantErrors>({});
+  const [consentSignature, setConsentSignature] = useState("");
+  const [consentAcceptedAt, setConsentAcceptedAt] = useState<string | null>(null);
+  const [consentReachedBottom, setConsentReachedBottom] = useState(false);
+  const [consentError, setConsentError] = useState("");
+  const consentScrollRef = useRef<HTMLDivElement | null>(null);
 
   const med = MEDS[index];
+  const activeMed = screen === "practice" ? PRACTICE_MED : med;
   const progress = useMemo(() => String(index + 1) + " / " + String(MEDS.length), [index]);
   const canAdvance = infusionByMed[index]?.complete ?? false;
-  const participantIdForSession = participant.participantId.trim() || "Not entered";
+  const participantIdForSession = participant.participantId.trim() || "Pending assignment";
+  const consentAccepted = Boolean(consentAcceptedAt);
 
   const updateParticipantField = (field: keyof Participant, value: string) => {
     setParticipant((prev) => ({ ...prev, [field]: value }));
@@ -781,6 +879,38 @@ export default function Home() {
 
   const handlePracticeChange = useCallback(() => {}, []);
 
+  const handleConsentScroll = () => {
+    const node = consentScrollRef.current;
+    if (!node) return;
+
+    const distanceFromBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+    if (distanceFromBottom <= 8) setConsentReachedBottom(true);
+  };
+
+  const signConsent = () => {
+    if (!consentReachedBottom) {
+      setConsentError("Scroll to the bottom of the consent form before agreeing.");
+      return;
+    }
+
+    if (!consentSignature.trim()) {
+      setConsentError("Enter a typed signature before agreeing.");
+      return;
+    }
+
+    setParticipant((prev) => (prev.participantId ? prev : { ...prev, participantId: generateParticipantId() }));
+    setConsentAcceptedAt(formatCompletedAt(new Date()));
+    setConsentError("");
+  };
+
+  const openDrugReference = () => {
+    if (screen === "med") {
+      setReferenceOpenedByMed((prev) => ({ ...prev, [index]: true }));
+    }
+
+    setShowRef(true);
+  };
+
   const exportRows = useMemo<ExportRow[]>(() => {
     return MEDS.flatMap((entry, medIndex) => {
       const result = infusionByMed[medIndex];
@@ -792,11 +922,13 @@ export default function Home() {
           age: participant.age.trim(),
           gender: participant.gender,
           levelOfNursing: participant.levelOfNursing,
+          areaOfNursing: participant.areaOfNursing.trim(),
           yearsOfNursingExperience: participant.yearsOfNursingExperience.trim(),
           medicationName: entry.name,
           medicationAdministrationTimeSeconds: Number(result.elapsedSeconds.toFixed(2)),
           requiredMinimumSeconds: entry.requiredSeconds,
           complianceStatus: complianceForElapsed(result.elapsedSeconds, entry.requiredSeconds),
+          additionalDrugInformationViewed: referenceOpenedByMed[medIndex] ? "Yes" : "No",
           completedAt: result.completedAt,
         },
       ];
@@ -804,10 +936,12 @@ export default function Home() {
   }, [
     infusionByMed,
     participant.age,
+    participant.areaOfNursing,
     participant.gender,
     participant.levelOfNursing,
     participant.participantId,
     participant.yearsOfNursingExperience,
+    referenceOpenedByMed,
   ]);
 
   const downloadCsv = useCallback(() => {
@@ -828,6 +962,11 @@ export default function Home() {
   }, [exportRows, participant.participantId]);
 
   const openPracticeRun = () => {
+    if (!consentAccepted) {
+      setConsentError("Consent must be signed before continuing.");
+      return;
+    }
+
     const errors = validateParticipant(participant);
     setParticipantErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -835,10 +974,17 @@ export default function Home() {
     setShowRef(false);
     setIndex(0);
     setInfusionByMed({});
+    setReferenceOpenedByMed({});
     setScreen("practice");
   };
 
   const startActualSimulation = () => {
+    if (!consentAccepted) {
+      setConsentError("Consent must be signed before continuing.");
+      setScreen("home");
+      return;
+    }
+
     const errors = validateParticipant(participant);
     setParticipantErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -849,6 +995,7 @@ export default function Home() {
     setShowRef(false);
     setIndex(0);
     setInfusionByMed({});
+    setReferenceOpenedByMed({});
     setScreen("med");
   };
 
@@ -857,6 +1004,7 @@ export default function Home() {
     setScreen("home");
     setIndex(0);
     setInfusionByMed({});
+    setReferenceOpenedByMed({});
   };
 
   const toHome = () => {
@@ -864,19 +1012,19 @@ export default function Home() {
     setScreen("home");
     setIndex(0);
     setInfusionByMed({});
-    setParticipant({
-      participantId: "",
-      age: "",
-      gender: "",
-      levelOfNursing: "",
-      yearsOfNursingExperience: "",
-    });
+    setReferenceOpenedByMed({});
+    setParticipant(createParticipant());
     setParticipantErrors({});
+    setConsentSignature("");
+    setConsentAcceptedAt(null);
+    setConsentReachedBottom(false);
+    setConsentError("");
   };
 
   if (screen === "home") {
     return (
       <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 px-6 py-10 text-zinc-900">
+        <ParticipantIdBadge participantId={participantIdForSession} />
         <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-200 bg-white p-8 shadow-xl md:p-10">
           <p className="inline-flex rounded-full bg-blue-100 px-4 py-1 text-sm font-semibold text-blue-700">Medication Rate Simulation</p>
           <h1 className="mt-5 text-4xl font-black tracking-tight md:text-5xl">IV Push Medication Training</h1>
@@ -899,26 +1047,87 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-            <h2 className="text-2xl font-bold text-zinc-900">Participant Information</h2>
+          <div className="mt-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-zinc-900">Consent Form</h2>
+                <p className="mt-2 max-w-3xl text-base text-zinc-700">
+                  Review and sign the consent form before entering any demographic information.
+                </p>
+              </div>
+              {consentAccepted && (
+                <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">
+                  Signed {consentAcceptedAt}
+                </span>
+              )}
+            </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div
+              ref={consentScrollRef}
+              onScroll={handleConsentScroll}
+              className="mt-5 max-h-72 space-y-4 overflow-y-auto rounded-2xl border border-blue-200 bg-white p-5 text-sm leading-7 text-zinc-700"
+            >
+              {CONSENT_SECTIONS.map((section) => (
+                <div key={section.title} className="space-y-2">
+                  <h3 className="text-base font-bold text-zinc-900">{section.title}</h3>
+                  {section.paragraphs?.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                  {section.bullets && (
+                    <ul className="space-y-2 pl-5">
+                      {section.bullets.map((bullet) => (
+                        <li key={bullet} className="list-disc">
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-3 text-sm font-semibold text-zinc-600">
+              {consentReachedBottom ? "You can now sign the consent form." : "Scroll to the bottom to enable the I Agree button."}
+            </p>
+            <p className="mt-1 text-sm text-zinc-600">Selecting I Agree confirms participation and allows access to the simulation.</p>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto]">
               <label className="space-y-2">
-                <span className="text-sm font-semibold uppercase tracking-wide text-zinc-600">Participant ID</span>
+                <span className="text-sm font-semibold uppercase tracking-wide text-zinc-600">Typed Signature</span>
                 <input
                   type="text"
-                  value={participant.participantId}
-                  onChange={(event) => updateParticipantField("participantId", event.target.value)}
-                  placeholder="e.g. P386025"
-                  aria-invalid={Boolean(participantErrors.participantId)}
-                  className={
-                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring " +
-                    (participantErrors.participantId ? "border-rose-500 ring-rose-200" : "border-zinc-300 ring-blue-200")
-                  }
+                  value={consentSignature}
+                  onChange={(event) => setConsentSignature(event.target.value)}
+                  disabled={consentAccepted}
+                  placeholder="Type full name to sign"
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-zinc-100"
                 />
-                {participantErrors.participantId && <p className="text-sm font-semibold text-rose-700">{participantErrors.participantId}</p>}
               </label>
 
+              <button
+                onClick={signConsent}
+                disabled={consentAccepted || !consentReachedBottom || !consentSignature.trim()}
+                className="self-end rounded-2xl bg-blue-600 px-8 py-4 text-lg font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+              >
+                {consentAccepted ? "Consent Signed" : "I Agree"}
+              </button>
+            </div>
+
+            {consentError && <p className="mt-3 text-sm font-semibold text-rose-700">{consentError}</p>}
+          </div>
+
+          <div className={`mt-8 rounded-2xl border p-6 ${consentAccepted ? "border-zinc-200 bg-zinc-50" : "border-zinc-200 bg-zinc-100/80"}`}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-bold text-zinc-900">Participant Information</h2>
+                <p className="mt-2 text-base text-zinc-600">The participant ID is assigned automatically and shown in the top-left corner.</p>
+              </div>
+              {!consentAccepted && (
+                <span className="rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800">Consent Required First</span>
+              )}
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <label className="space-y-2">
                 <span className="text-sm font-semibold uppercase tracking-wide text-zinc-600">Age</span>
                 <input
@@ -930,9 +1139,10 @@ export default function Home() {
                   value={participant.age}
                   onChange={(event) => updateParticipantField("age", event.target.value)}
                   placeholder="e.g. 24"
+                  disabled={!consentAccepted}
                   aria-invalid={Boolean(participantErrors.age)}
                   className={
-                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring " +
+                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring disabled:cursor-not-allowed disabled:bg-zinc-100 " +
                     (participantErrors.age ? "border-rose-500 ring-rose-200" : "border-zinc-300 ring-blue-200")
                   }
                 />
@@ -944,9 +1154,10 @@ export default function Home() {
                 <select
                   value={participant.gender}
                   onChange={(event) => updateParticipantField("gender", event.target.value)}
+                  disabled={!consentAccepted}
                   aria-invalid={Boolean(participantErrors.gender)}
                   className={
-                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring " +
+                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring disabled:cursor-not-allowed disabled:bg-zinc-100 " +
                     (participantErrors.gender ? "border-rose-500 ring-rose-200" : "border-zinc-300 ring-blue-200")
                   }
                 >
@@ -965,9 +1176,10 @@ export default function Home() {
                 <select
                   value={participant.levelOfNursing}
                   onChange={(event) => updateParticipantField("levelOfNursing", event.target.value)}
+                  disabled={!consentAccepted}
                   aria-invalid={Boolean(participantErrors.levelOfNursing)}
                   className={
-                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring " +
+                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring disabled:cursor-not-allowed disabled:bg-zinc-100 " +
                     (participantErrors.levelOfNursing ? "border-rose-500 ring-rose-200" : "border-zinc-300 ring-blue-200")
                   }
                 >
@@ -982,6 +1194,23 @@ export default function Home() {
               </label>
 
               <label className="space-y-2">
+                <span className="text-sm font-semibold uppercase tracking-wide text-zinc-600">Area of Nursing</span>
+                <input
+                  type="text"
+                  value={participant.areaOfNursing}
+                  onChange={(event) => updateParticipantField("areaOfNursing", event.target.value)}
+                  placeholder="e.g. ICU, Med Surg"
+                  disabled={!consentAccepted}
+                  aria-invalid={Boolean(participantErrors.areaOfNursing)}
+                  className={
+                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring disabled:cursor-not-allowed disabled:bg-zinc-100 " +
+                    (participantErrors.areaOfNursing ? "border-rose-500 ring-rose-200" : "border-zinc-300 ring-blue-200")
+                  }
+                />
+                {participantErrors.areaOfNursing && <p className="text-sm font-semibold text-rose-700">{participantErrors.areaOfNursing}</p>}
+              </label>
+
+              <label className="space-y-2">
                 <span className="text-sm font-semibold uppercase tracking-wide text-zinc-600">Years of Nursing Experience</span>
                 <input
                   type="number"
@@ -992,9 +1221,10 @@ export default function Home() {
                   value={participant.yearsOfNursingExperience}
                   onChange={(event) => updateParticipantField("yearsOfNursingExperience", event.target.value)}
                   placeholder="e.g. 2.5"
+                  disabled={!consentAccepted}
                   aria-invalid={Boolean(participantErrors.yearsOfNursingExperience)}
                   className={
-                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring " +
+                    "w-full rounded-xl border bg-white px-4 py-3 text-lg font-semibold text-zinc-900 outline-none transition focus:ring disabled:cursor-not-allowed disabled:bg-zinc-100 " +
                     (participantErrors.yearsOfNursingExperience ? "border-rose-500 ring-rose-200" : "border-zinc-300 ring-blue-200")
                   }
                 />
@@ -1005,65 +1235,15 @@ export default function Home() {
             </div>
           </div>
 
-          <button onClick={openPracticeRun} className="mt-10 rounded-2xl bg-blue-600 px-8 py-5 text-xl font-bold text-white shadow-lg transition hover:bg-blue-500">
+          {!consentAccepted && <p className="mt-4 text-sm font-semibold text-amber-700">Consent must be signed before the demographic survey can be completed.</p>}
+
+          <button
+            onClick={openPracticeRun}
+            disabled={!consentAccepted}
+            className="mt-10 rounded-2xl bg-blue-600 px-8 py-5 text-xl font-bold text-white shadow-lg transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+          >
             Continue to Practice Run
           </button>
-        </div>
-      </main>
-    );
-  }
-
-  if (screen === "practice") {
-    return (
-      <main className="min-h-screen bg-gradient-to-b from-amber-50 to-zinc-100 px-4 py-6 text-zinc-900 md:px-6 md:py-10">
-        <div className="mx-auto grid max-w-[1580px] gap-4 xl:grid-cols-[1fr_560px]">
-          <section className="rounded-3xl border border-amber-200 bg-white p-6 shadow-xl md:p-8">
-            <p className="inline-flex rounded-full bg-amber-100 px-4 py-1 text-sm font-semibold text-amber-800">Practice Mode</p>
-            <h1 className="mt-5 text-4xl font-black tracking-tight">Practice Run</h1>
-            <p className="mt-4 max-w-3xl text-lg text-zinc-600">
-              Use this screen to get comfortable with the syringe controls and timing display before the actual simulation begins.
-            </p>
-
-            <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
-              <p className="text-xl font-bold text-zinc-900">This is practice only.</p>
-              <p className="mt-2 text-base text-zinc-700">
-                Practice activity does not count as the actual run, and nothing from this screen is included in the exported study results.
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <SummaryCard label="Participant ID" value={displayParticipantValue(participant.participantId)} />
-              <SummaryCard label="Age" value={displayParticipantValue(participant.age)} />
-              <SummaryCard label="Gender" value={displayParticipantValue(participant.gender)} />
-              <SummaryCard label="Level of Nursing" value={displayParticipantValue(participant.levelOfNursing)} />
-              <SummaryCard label="Years of Nursing Experience" value={displayParticipantValue(participant.yearsOfNursingExperience)} />
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-              <p className="text-sm font-semibold uppercase tracking-wide text-zinc-500">How to use this step</p>
-              <ol className="mt-3 space-y-2 text-base text-zinc-700">
-                <li>1. Try the syringe controls and watch the timer respond as you administer the dose.</li>
-                <li>2. Use Reset Dose if you want to start the practice attempt over.</li>
-                <li>3. When you are ready, start the actual simulation. The real run will begin fresh.</li>
-              </ol>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button onClick={backToIntake} className="rounded-2xl bg-zinc-800 px-6 py-4 text-lg font-bold text-white hover:bg-zinc-700">
-                Back to Participant Info
-              </button>
-              <button onClick={startActualSimulation} className="rounded-2xl bg-blue-600 px-6 py-4 text-lg font-bold text-white hover:bg-blue-500">
-                Start Actual Simulation
-              </button>
-            </div>
-          </section>
-
-          <aside>
-            <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-xl">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-amber-700">Practice Syringe</p>
-              <InfusionPanel key="practice" orderedAdminDose="4 mg = 2 mL" onChange={handlePracticeChange} />
-            </div>
-          </aside>
         </div>
       </main>
     );
@@ -1072,6 +1252,7 @@ export default function Home() {
   if (screen === "done") {
     return (
       <main className="grid min-h-screen place-items-center bg-gradient-to-b from-emerald-50 to-zinc-100 p-6 md:p-10">
+        <ParticipantIdBadge participantId={participantIdForSession} />
         <div className="w-full max-w-6xl rounded-3xl border border-emerald-200 bg-white p-6 shadow-xl md:p-10">
           <h1 className="text-4xl font-black text-zinc-900">Simulation Complete</h1>
           <p className="mt-3 text-lg text-zinc-600">
@@ -1084,6 +1265,7 @@ export default function Home() {
             <SummaryCard label="Age" value={displayParticipantValue(participant.age)} />
             <SummaryCard label="Gender" value={displayParticipantValue(participant.gender)} />
             <SummaryCard label="Level of Nursing" value={displayParticipantValue(participant.levelOfNursing)} />
+            <SummaryCard label="Area of Nursing" value={displayParticipantValue(participant.areaOfNursing)} />
             <SummaryCard label="Years of Nursing Experience" value={displayParticipantValue(participant.yearsOfNursingExperience)} />
           </div>
 
@@ -1095,6 +1277,7 @@ export default function Home() {
                   <th className="px-4 py-3 font-semibold text-zinc-700">Time (sec)</th>
                   <th className="px-4 py-3 font-semibold text-zinc-700">Minimum (sec)</th>
                   <th className="px-4 py-3 font-semibold text-zinc-700">Compliance</th>
+                  <th className="px-4 py-3 font-semibold text-zinc-700">Additional Drug Info</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 bg-white">
@@ -1112,6 +1295,7 @@ export default function Home() {
                     >
                       {row.complianceStatus}
                     </td>
+                    <td className="px-4 py-3 text-zinc-700">{row.additionalDrugInformationViewed}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1135,93 +1319,125 @@ export default function Home() {
     );
   }
 
+  const isPractice = screen === "practice";
+
   return (
-    <main className="bg-zinc-100 px-4 py-4 text-zinc-900">
+    <main className={`${isPractice ? "bg-gradient-to-b from-amber-50 to-zinc-100" : "bg-zinc-100"} min-h-screen px-4 py-4 text-zinc-900`}>
+      <ParticipantIdBadge participantId={participantIdForSession} />
       <div className="mx-auto grid max-w-[1580px] gap-4 xl:grid-cols-[1fr_560px]">
-        <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl md:p-8">
+        <section className={`rounded-3xl border bg-white p-6 shadow-xl md:p-8 ${isPractice ? "border-amber-200" : "border-zinc-200"}`}>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-4xl font-black">IV Medication Card</h1>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-blue-100 px-4 py-2 text-base font-bold text-blue-700">{progress}</span>
-              <span className="rounded-full bg-zinc-100 px-4 py-2 text-base font-semibold text-zinc-700">Participant ID: {participantIdForSession}</span>
+            <div>
+              <p className={`inline-flex rounded-full px-4 py-1 text-sm font-semibold ${isPractice ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
+                {isPractice ? "Practice Mode" : "Medication Rate Simulation"}
+              </p>
+              <h1 className="mt-5 text-4xl font-black">IV Medication Card</h1>
             </div>
+            <span className={`rounded-full px-4 py-2 text-base font-bold ${isPractice ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
+              {isPractice ? "Practice Run" : progress}
+            </span>
           </div>
 
-          <p className="mb-4 text-base font-semibold text-zinc-700">Compliance target: complete in at least {formatSeconds(med.requiredSeconds)}.</p>
+          <p className="mb-4 text-base font-semibold text-zinc-700">
+            Compliance target: complete in at least {formatSeconds(activeMed.requiredSeconds)}.
+          </p>
+
+          {isPractice && (
+            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <p className="text-lg font-bold text-zinc-900">This practice screen uses sample medication information.</p>
+              <p className="mt-2 text-base text-zinc-700">
+                Nothing from the practice run is included in the exported study data, and the actual simulation will begin fresh.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
               <p className="text-base font-semibold uppercase tracking-wide text-zinc-500">Linked line</p>
-              <p className="mt-2 text-xl font-semibold text-zinc-900">{med.linkedLine}</p>
-              <p className="mt-3 text-lg font-medium text-zinc-800">{med.name}</p>
+              <p className="mt-2 text-xl font-semibold text-zinc-900">{activeMed.linkedLine}</p>
+              <p className="mt-3 text-lg font-medium text-zinc-800">{activeMed.name}</p>
             </div>
 
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
               <p className="text-base font-semibold uppercase tracking-wide text-amber-700">Administration Instructions</p>
-              <p className="mt-2 text-lg text-zinc-900">{med.administrationInstructions || "None listed"}</p>
+              <p className="mt-2 text-lg text-zinc-900">{activeMed.administrationInstructions || "None listed"}</p>
             </div>
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <Info label="Ordered Admin Dose" value={med.orderedAdminDose} />
-            <Info label="Concentration" value={med.concentration} />
-            <Info label="Last Admin" value={med.lastAdmin} />
-            <Info label="Frequency" value={med.frequency} />
-            <Info label="Route" value={med.route} />
-            <Info label="Ordered Dose" value={med.orderedDose} />
-            <Info label="Reason" value={med.reason} />
+            <Info label="Ordered Admin Dose" value={activeMed.orderedAdminDose} />
+            <Info label="Concentration" value={activeMed.concentration} />
+            <Info label="Last Admin" value={activeMed.lastAdmin} />
+            <Info label="Frequency" value={activeMed.frequency} />
+            <Info label="Route" value={activeMed.route} />
+            <Info label="Ordered Dose" value={activeMed.orderedDose} />
+            <Info label="Reason" value={activeMed.reason} />
             <Info label="Order information" value="Administration Instructions" />
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => setShowRef(true)} className="rounded-2xl border border-emerald-300 bg-emerald-50 px-6 py-4 text-lg font-bold text-emerald-800 hover:bg-emerald-100">
-              Open Drug Reference
+            <button onClick={openDrugReference} className="rounded-2xl border border-emerald-300 bg-emerald-50 px-6 py-4 text-lg font-bold text-emerald-800 hover:bg-emerald-100">
+              Additional Drug Information
             </button>
-            <button
-              onClick={downloadCsv}
-              disabled={!exportRows.length}
-              className="rounded-2xl border border-blue-300 bg-blue-50 px-6 py-4 text-lg font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-40"
-            >
-              Download CSV
-            </button>
+            {!isPractice && (
+              <button
+                onClick={downloadCsv}
+                disabled={!exportRows.length}
+                className="rounded-2xl border border-blue-300 bg-blue-50 px-6 py-4 text-lg font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-40"
+              >
+                Download CSV
+              </button>
+            )}
             <button
               onClick={() => {
-                if (index === 0) backToIntake();
+                if (isPractice || index === 0) backToIntake();
                 else setIndex((value) => value - 1);
                 setShowRef(false);
               }}
               className="rounded-2xl bg-zinc-800 px-6 py-4 text-lg font-bold text-white hover:bg-zinc-700"
             >
-              Back
+              {isPractice || index === 0 ? "Back to Participant Info" : "Back"}
             </button>
-            <button
-              onClick={() => {
-                setShowRef(false);
-                if (index === MEDS.length - 1) setScreen("done");
-                else setIndex((value) => value + 1);
-              }}
-              disabled={!canAdvance}
-              className="rounded-2xl bg-blue-600 px-6 py-4 text-lg font-bold text-white hover:bg-blue-500 disabled:opacity-40"
-            >
-              Next Medication
-            </button>
+            {isPractice ? (
+              <button onClick={startActualSimulation} className="rounded-2xl bg-blue-600 px-6 py-4 text-lg font-bold text-white hover:bg-blue-500">
+                Start Actual Simulation
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setShowRef(false);
+                  if (index === MEDS.length - 1) setScreen("done");
+                  else setIndex((value) => value + 1);
+                }}
+                disabled={!canAdvance}
+                className="rounded-2xl bg-blue-600 px-6 py-4 text-lg font-bold text-white hover:bg-blue-500 disabled:opacity-40"
+              >
+                Next Medication
+              </button>
+            )}
           </div>
-          {!canAdvance && <p className="mt-2 text-base font-semibold text-amber-700">Complete syringe infusion to continue.</p>}
-          {canAdvance && infusionByMed[index]?.elapsedSeconds !== null && (
+          {!isPractice && !canAdvance && <p className="mt-2 text-base font-semibold text-amber-700">Complete syringe infusion to continue.</p>}
+          {!isPractice && canAdvance && infusionByMed[index]?.elapsedSeconds !== null && (
             <p
               className={
-                complianceForElapsed(infusionByMed[index].elapsedSeconds ?? 0, med.requiredSeconds) === "In compliance"
+                complianceForElapsed(infusionByMed[index].elapsedSeconds ?? 0, activeMed.requiredSeconds) === "In compliance"
                   ? "mt-3 text-base font-semibold text-emerald-700"
                   : "mt-3 text-base font-semibold text-rose-700"
               }
             >
-              {complianceForElapsed(infusionByMed[index].elapsedSeconds ?? 0, med.requiredSeconds)}: {Number((infusionByMed[index].elapsedSeconds ?? 0).toFixed(2))} seconds (target {med.requiredSeconds} seconds or more).
+              {complianceForElapsed(infusionByMed[index].elapsedSeconds ?? 0, activeMed.requiredSeconds)}:{" "}
+              {Number((infusionByMed[index].elapsedSeconds ?? 0).toFixed(2))} seconds (target {activeMed.requiredSeconds} seconds or more).
             </p>
+          )}
+          {isPractice && (
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-base text-zinc-700">
+              Use this practice run to get comfortable with the syringe controls and timer before beginning the actual medication sequence.
+            </div>
           )}
         </section>
 
         <aside>
-          <InfusionPanel key={index} orderedAdminDose={med.orderedAdminDose} onChange={handleInfusionChange} />
+          <InfusionPanel key={isPractice ? "practice" : index} orderedAdminDose={activeMed.orderedAdminDose} onChange={isPractice ? handlePracticeChange : handleInfusionChange} />
         </aside>
       </div>
 
@@ -1229,8 +1445,8 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div className="w-full max-w-3xl rounded-3xl border border-emerald-200 bg-white p-7 shadow-2xl">
             <p className="text-base font-semibold uppercase tracking-wide text-emerald-700">Drug Reference</p>
-            <h2 className="mt-2 text-3xl font-black text-zinc-900">{med.referenceTitle}</h2>
-            <p className="mt-4 text-xl text-zinc-800">{med.referenceBody}</p>
+            <h2 className="mt-2 text-3xl font-black text-zinc-900">{activeMed.referenceTitle}</h2>
+            <p className="mt-4 text-xl text-zinc-800">{activeMed.referenceBody}</p>
             <button onClick={() => setShowRef(false)} className="mt-6 rounded-2xl bg-zinc-900 px-6 py-3 text-lg font-bold text-white hover:bg-zinc-700">
               Close
             </button>
@@ -1238,6 +1454,15 @@ export default function Home() {
         </div>
       )}
     </main>
+  );
+}
+
+function ParticipantIdBadge({ participantId }: { participantId: string }) {
+  return (
+    <div className="fixed left-4 top-4 z-40 rounded-2xl border border-blue-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Participant ID</p>
+      <p className="text-lg font-black text-zinc-900">{participantId}</p>
+    </div>
   );
 }
 
