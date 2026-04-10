@@ -1389,7 +1389,7 @@ export default function Home() {
               <p className={`inline-flex rounded-full px-4 py-1 text-sm font-semibold ${isPractice ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
                 {isPractice ? "Practice Mode" : "Medication Rate Simulation"}
               </p>
-              <h1 className="mt-5 text-4xl font-black">IV Medication Card</h1>
+              <h1 className="mt-5 text-4xl font-black">IV Medication Order</h1>
             </div>
             <span className={`rounded-full px-4 py-2 text-base font-bold ${isPractice ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
               {isPractice ? "Practice Run" : progress}
