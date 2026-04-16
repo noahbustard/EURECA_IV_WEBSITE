@@ -1,4 +1,4 @@
-# 💊 EURECA IV Medication Administration Simulation
+# EURECA IV Medication Administration Simulation
 
 An interactive web-based simulation for practicing safe IV push medication administration, built as part of a cross-disciplinary undergraduate research project at **Midwestern State University** (Texas Tech University System).
 
@@ -6,7 +6,7 @@ An interactive web-based simulation for practicing safe IV push medication admin
 
 ---
 
-## 📋 About the Project
+## About the Project
 
 This application was developed through the **EURECA** (Enhancement of Undergraduate Research and Creative Activities) program as a collaboration between the **Wilson School of Nursing** and the **Department of Computer Science** at MSU Texas.
 
@@ -23,7 +23,7 @@ The research investigates whether a digital simulation tool can support nursing 
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Guided Simulation Flow** — Participants complete an informed consent form, a demographics survey, and then work through medications one at a time
 - **Interactive Syringe** — On-screen syringe component for simulated IV push administration
@@ -35,7 +35,7 @@ The research investigates whether a digital simulation tool can support nursing 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Technology | Purpose |
 | --- | --- |
@@ -48,7 +48,7 @@ The research investigates whether a digital simulation tool can support nursing 
 
 ---
 
-## 📊 Data Collected
+## Data Collected
 
 Each simulation session exports the following fields to CSV:
 
@@ -65,7 +65,7 @@ Each simulation session exports the following fields to CSV:
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -100,7 +100,7 @@ npm start
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```plaintext
 EURECA_IV_WEBSITE/
@@ -120,7 +120,7 @@ EURECA_IV_WEBSITE/
 
 ---
 
-## 🎯 Challenges & Design Decisions
+## Challenges & Design Decisions
 
 - **Translating clinical workflows to web** — Mapped the real IV medication administration process into a step-by-step digital experience while keeping the steps realistic and easy for participants to follow
 - **UI density** — Organized medication details, instructions, timing tools, and interactive components on a single screen without overwhelming the user
@@ -128,7 +128,7 @@ EURECA_IV_WEBSITE/
 
 ---
 
-## 📄 License
+## License
 
 This project was developed for academic research purposes at Midwestern State University.
 
