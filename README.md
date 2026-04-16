@@ -4,6 +4,10 @@ Interactive web simulation for practicing timed IV push medication administratio
 
 Presented at UGRCAF 2026 (Undergraduate Research and Creative Activities Forum) through the EURECA undergraduate research program at Midwestern State University.
 
+## Research poster
+
+![EURECA research poster: Enhancing Patient Safety - Development of an EMR-based IV Medication Administration Virtual Simulation](public/eureca-iv-poster.png)
+
 ## Why this project matters
 
 Nursing IV push administration requires both dosage accuracy and timing compliance. This project provides a structured simulation where participants complete consent and demographics, administer medications in a controlled interface, and export timing/compliance data for analysis.
