@@ -1,137 +1,112 @@
 # EURECA IV Medication Administration Simulation
 
-An interactive web-based simulation for practicing safe IV push medication administration, built as part of a cross-disciplinary undergraduate research project at **Midwestern State University** (Texas Tech University System).
+Interactive web simulation for practicing timed IV push medication administration in a guided research workflow.
 
-> **Presented at UGRCAF 2026** — Undergraduate Research and Creative Activities Forum, April 2026
+Presented at UGRCAF 2026 (Undergraduate Research and Creative Activities Forum) through the EURECA undergraduate research program at Midwestern State University.
 
----
+## Why this project matters
 
-## About the Project
+Nursing IV push administration requires both dosage accuracy and timing compliance. This project provides a structured simulation where participants complete consent and demographics, administer medications in a controlled interface, and export timing/compliance data for analysis.
 
-This application was developed through the **EURECA** (Enhancement of Undergraduate Research and Creative Activities) program as a collaboration between the **Wilson School of Nursing** and the **Department of Computer Science** at MSU Texas.
+## Core capabilities
 
-The research investigates whether a digital simulation tool can support nursing professionals in practicing timed IV push medication administration. Instead of relying solely on paper-based instructions, participants work through an interactive, guided experience that mirrors real clinical workflows, while the system automatically collects performance data for later analysis.
+- Guided participant flow: consent, demographics, practice run, simulation, summary
+- Interactive syringe trainer with room clock and elapsed-time tracking
+- Medication order context: dose, route, frequency, instructions, and line details
+- Optional additional drug-reference view per medication
+- Automated compliance evaluation against required minimum administration time
+- CSV export for downstream analysis in Excel or statistical tools
 
-### Research Team
+## Tech stack
 
-| Role | Name | Department |
-| --- | --- | --- |
-| Faculty Sponsor | Dr. Robin Lockhart | Wilson School of Nursing |
-| Co-Researcher | Trinity Munoz | Nursing |
-| Co-Researcher/Developer | Noah Bustard | Computer Science |
-| Faculty Advisor | Dr. Tina Johnson | Computer Science |
+- Next.js 16 (App Router)
+- React 19
+- TypeScript (strict mode)
+- Tailwind CSS v4
+- ESLint (Next.js + TypeScript rules)
 
----
-
-## Key Features
-
-- **Guided Simulation Flow** — Participants complete an informed consent form, a demographics survey, and then work through medications one at a time
-- **Interactive Syringe** — On-screen syringe component for simulated IV push administration
-- **Real-Time Clock & Timer** — Clock display to support timing awareness during medication administration
-- **Medication Order Display** — Large, readable medication details and administration instructions on-screen
-- **Drug Reference Pop-Up** — Quick-access reference for medication guidance during the simulation
-- **Automatic Data Collection** — Tracks participant actions, administration timing, and compliance status throughout the session
-- **CSV Export** — One-click download of all session data formatted for Excel analysis
-
----
-
-## Tech Stack
-
-| Technology | Purpose |
-| --- | --- |
-| **Next.js 16** | React framework with App Router |
-| **React 19** | UI component library |
-| **TypeScript** | Type-safe development |
-| **Tailwind CSS v4** | Utility-first styling |
-| **PostCSS** | CSS processing pipeline |
-| **ESLint** | Code quality and linting |
-
----
-
-## Data Collected
-
-Each simulation session exports the following fields to CSV:
-
-| Field | Description |
-| --- | --- |
-| Patient ID | Unique participant identifier |
-| Years of Experience | Nursing experience (from survey) |
-| Level of Nursing | LVN, RN, etc. (from survey) |
-| Medication | Name of the administered medication |
-| Administration Time | Time taken to complete administration |
-| Required Minimum Time | Expected minimum safe administration time |
-| Compliance Status | Whether administration met the time threshold |
-| Completed At | Timestamp of completion |
-
----
-
-## Getting Started
+## Local development
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or later recommended)
-- npm
+- Node.js 20+
+- npm 10+
 
-### Installation
+### Install
 
 ```bash
-git clone https://github.com/noahbustard/EURECA_IV_WEBSITE.git
-cd EURECA_IV_WEBSITE
+git clone https://github.com/noahbustard/EURECA_IV_APP.git
+cd EURECA_IV_APP
 npm install
-
 ```
 
-### Run Locally
+### Run
 
 ```bash
 npm run dev
-
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open <http://localhost:3000>.
 
-### Build for Production
+## Scripts
 
-```bash
-npm run build
-npm start
+- `npm run dev`: start development server
+- `npm run lint`: run ESLint across the repository
+- `npm run typecheck`: run TypeScript type checking (`tsc --noEmit`)
+- `npm run build`: create production build
+- `npm run start`: run production build locally
+- `npm run verify`: run lint + typecheck + build
 
-```
+## Environment configuration
 
----
+This project currently has no required runtime environment variables.
 
-## Project Structure
+- Optional local overrides can be placed in `.env.local`.
+- Use `.env.example` as the template if environment variables are introduced later.
+
+## Data captured in CSV export
+
+- Participant ID
+- Age
+- Gender
+- Level of Nursing
+- Area of Nursing
+- Years of Nursing Experience
+- Medication
+- Administration Time (seconds)
+- Required Minimum Administration Time (seconds)
+- Compliance Status
+- Viewed Additional Drug Information
+- Completed At
+
+## Project structure
 
 ```plaintext
-EURECA_IV_WEBSITE/
-├── src/
-│   └── app/
-│       ├── layout.tsx        # Root layout
-│       ├── page.tsx          # Main simulation application
-│       ├── globals.css       # Global styles (Tailwind)
-│       └── favicon.ico
-├── public/                   # Static assets
-├── next.config.ts
-├── tailwind / postcss config
-├── tsconfig.json
-└── package.json
-
+src/
+  app/
+    layout.tsx            # App shell + metadata
+    page.tsx              # Main simulation UI and screen flow
+    lib/simulation.ts     # Simulation domain types, constants, and pure helpers
 ```
 
----
+## Verification status
 
-## Challenges & Design Decisions
+Use the following command before opening pull requests:
 
-- **Translating clinical workflows to web** — Mapped the real IV medication administration process into a step-by-step digital experience while keeping the steps realistic and easy for participants to follow
-- **UI density** — Organized medication details, instructions, timing tools, and interactive components on a single screen without overwhelming the user
-- **Consistent data capture** — Designed the application to accurately track participant actions and timing so results could be collected reliably for research analysis
+```bash
+npm run verify
+```
 
----
+## Known limitations
+
+- No automated test suite yet (lint, typecheck, and build checks are included).
+- Data is session-based in the browser and exported manually via CSV.
+- This is a research simulation, not a clinical decision support or production EMR integration.
+
+## Academic context
+
+Research collaboration between the Wilson School of Nursing and Department of Computer Science, Midwestern State University.
 
 ## License
 
-This project was developed for academic research purposes at Midwestern State University.
-
----
-
-*Built with ☕ and Next.js by [Noah Bustard*](https://github.com/noahbustard)
+Developed for academic research and educational use.
