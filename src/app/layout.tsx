@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EURECA IV Medication Administration Simulation",
+  title: "IV Medication Administration Simulation",
   description:
-    "Interactive research simulation for practicing timed IV push medication administration with guided workflow and CSV data export.",
+    "Interactive research simulation for practicing timed IV push medication administration with guided workflow and secure study database collection.",
 };
 
 export default function RootLayout({
@@ -24,10 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>

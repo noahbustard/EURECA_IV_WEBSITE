@@ -33,6 +33,13 @@ export type ParticipantErrors = Partial<Record<keyof Participant, string>>;
 
 export type ComplianceStatus = "In compliance" | "Not in compliance";
 
+export const RUN_TYPE_LABELS = {
+  training: "Training Run",
+  official: "Official Study Run",
+} as const;
+
+export type RunType = keyof typeof RUN_TYPE_LABELS;
+
 export type ExportRow = {
   participantId: string;
   age: string;
@@ -46,6 +53,14 @@ export type ExportRow = {
   complianceStatus: ComplianceStatus;
   additionalDrugInformationViewed: "Yes" | "No";
   completedAt: string;
+};
+
+export type ResultsSavePayload = {
+  runId: string;
+  runType: RunType;
+  consentAcceptedAt: string;
+  participant: Participant;
+  rows: ExportRow[];
 };
 
 export type ConsentSection = {
@@ -372,50 +387,6 @@ export function validateParticipant(participant: Participant): ParticipantErrors
   return errors;
 }
 
-function csvEscape(value: string | number) {
-  const text = String(value ?? "");
-  if (/["\n,]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
-  return text;
-}
-
 export function displayParticipantValue(value: string) {
   return value.trim() || "Not entered";
-}
-
-export function rowsToCsv(rows: ExportRow[]) {
-  const headers = [
-    "Participant ID",
-    "Age",
-    "Gender",
-    "Level Of Nursing",
-    "Area Of Nursing",
-    "Years of Nursing Experience",
-    "Medication",
-    "Administration Time",
-    "Required Minimum Administration Time",
-    "Compliance Status",
-    "Viewed Additional Drug Information",
-    "Completed At",
-  ];
-
-  const values = rows.map((row) =>
-    [
-      row.participantId,
-      row.age,
-      row.gender,
-      row.levelOfNursing,
-      row.areaOfNursing,
-      row.yearsOfNursingExperience,
-      row.medicationName,
-      row.medicationAdministrationTimeSeconds,
-      row.requiredMinimumSeconds,
-      row.complianceStatus,
-      row.additionalDrugInformationViewed,
-      row.completedAt,
-    ]
-      .map(csvEscape)
-      .join(","),
-  );
-
-  return [headers.join(","), ...values].join("\n");
 }

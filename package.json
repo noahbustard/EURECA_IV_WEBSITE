@@ -1,5 +1,5 @@
 {
-  "name": "eureca-iv-app",
+  "name": "iv-simulation-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,6 +11,8 @@
     "verify": "npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
+    "exceljs": "^4.4.0",
     "next": "^16.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"

@@ -7,22 +7,51 @@ import {
   MEDS,
   NURSING_LEVEL_OPTIONS,
   PRACTICE_MED,
+  RUN_TYPE_LABELS,
   complianceForElapsed,
   createParticipant,
   displayParticipantValue,
   formatCompletedAt,
-  formatSeconds,
   generateParticipantId,
   parseMl,
-  rowsToCsv,
   validateParticipant,
   vialSizeForDose,
 } from "./lib/simulation";
-import type { ConsentChoice, ExportRow, InfusionResult, Participant, ParticipantErrors } from "./lib/simulation";
+import type { ConsentChoice, ExportRow, InfusionResult, Participant, ParticipantErrors, RunType } from "./lib/simulation";
 
 type Screen = "landing" | "consent" | "demographics" | "practice" | "med" | "done";
+type ResultSaveStatus = "idle" | "saving" | "saved" | "warning" | "error";
+type ResultSaveState = {
+  status: ResultSaveStatus;
+  message: string;
+  detail?: string;
+};
 
-function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: string; onChange: (r: InfusionResult) => void }) {
+const INITIAL_RESULT_SAVE_STATE: ResultSaveState = {
+  status: "idle",
+  message: "",
+};
+
+function createRunId(runType: RunType) {
+  const prefix = runType === "official" ? "OFFICIAL" : "TRAINING";
+  const timestamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
+  const randomPart =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2, 12);
+
+  return `${prefix}-${timestamp}-${randomPart}`;
+}
+
+function InfusionPanel({
+  orderedAdminDose,
+  requiredSeconds,
+  onChange,
+}: {
+  orderedAdminDose: string;
+  requiredSeconds: number;
+  onChange: (r: InfusionResult) => void;
+}) {
   const doseMl = parseMl(orderedAdminDose);
   const vialMl = vialSizeForDose(doseMl);
   const STEP_ML = 0.1;
@@ -209,6 +238,9 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
   const activeStartPct = 100 / 6;
   const activeHeightPct = 100 - activeStartPct;
   const filledPct = (remainingMl / vialMl) * activeHeightPct;
+  const completionElapsedSeconds = elapsedMs / 1000;
+  const completionCompliance = complianceForElapsed(completionElapsedSeconds, requiredSeconds);
+  const isCompliant = completionCompliance === "In compliance";
 
   return (
     <div className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -342,47 +374,62 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
         <p className="font-mono text-3xl font-bold text-zinc-900">{wallTimeLabel}</p>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-5 text-center shadow-inner">
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-center shadow-inner">
         {!complete ? (
-          <>
-            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-zinc-400">Time since first push</p>
-            <p className="font-mono text-5xl font-bold tracking-wider text-emerald-300 [text-shadow:0_0_10px_rgba(52,211,153,0.45)]">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">Time since first push</p>
+            <p className="font-mono text-6xl font-bold leading-none tracking-[0.08em] text-emerald-300 [text-shadow:0_0_10px_rgba(52,211,153,0.45)]">
               {String(elapsedMinutes).padStart(2, "0")}:{String(elapsedSeconds).padStart(2, "0")}
             </p>
-          </>
+          </div>
         ) : (
-          <div className="space-y-3">
-            <div>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">Since first push</p>
-              <p className="font-mono text-3xl font-bold tracking-wider text-emerald-300">{formatElapsed(sinceFirstPushMs)}</p>
+              <p className="font-mono text-[1.7rem] font-bold leading-none tracking-[0.08em] text-emerald-300">{formatElapsed(sinceFirstPushMs)}</p>
             </div>
-            <div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">Completion time</p>
-              <p className="font-mono text-3xl font-bold tracking-wider text-cyan-300">{formatElapsed(completionMs)}</p>
+              <p className="font-mono text-[1.7rem] font-bold leading-none tracking-[0.08em] text-cyan-300">{formatElapsed(completionMs)}</p>
             </div>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onMouseDown={startHoldPush}
-          onMouseUp={stopHoldPush}
-          onMouseLeave={stopHoldPush}
-          onTouchStart={startHoldPush}
-          onTouchEnd={stopHoldPush}
-          onTouchCancel={stopHoldPush}
-          disabled={complete}
-          className="rounded-xl bg-blue-600 px-4 py-4 text-base font-bold text-white hover:bg-blue-500 disabled:opacity-40"
-        >
-          Push 0.1 mL
-        </button>
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="rounded-xl bg-zinc-700 px-4 py-4 text-base font-bold text-white hover:bg-zinc-600"
-        >
-          Reset Dose
-        </button>
+      <div className={complete ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 gap-3"}>
+        {complete ? (
+          <div
+            className={
+              "animate-pulse rounded-xl px-4 py-4 text-center text-sm font-semibold whitespace-nowrap shadow-sm " +
+              (isCompliant
+                ? "border border-emerald-300 bg-emerald-50 text-emerald-800 shadow-[0_0_18px_rgba(74,222,128,0.45)]"
+                : "border border-rose-300 bg-rose-50 text-rose-800 shadow-[0_0_18px_rgba(251,113,133,0.45)]")
+            }
+          >
+            Medication Infused - {completionCompliance}
+          </div>
+        ) : (
+          <button
+            onMouseDown={startHoldPush}
+            onMouseUp={stopHoldPush}
+            onMouseLeave={stopHoldPush}
+            onTouchStart={startHoldPush}
+            onTouchEnd={stopHoldPush}
+            onTouchCancel={stopHoldPush}
+            disabled={complete}
+            className="rounded-xl bg-blue-600 px-4 py-4 text-base font-bold text-white hover:bg-blue-500 disabled:opacity-40"
+          >
+            Push 0.1 mL
+          </button>
+        )}
+        {!complete && (
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="rounded-xl bg-zinc-700 px-4 py-4 text-base font-bold text-white hover:bg-zinc-600"
+          >
+            Reset Dose
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-zinc-200 p-4 text-base">
@@ -390,12 +437,6 @@ function InfusionPanel({ orderedAdminDose, onChange }: { orderedAdminDose: strin
           Remaining: <span className="font-bold">{remainingMl.toFixed(1)} mL</span> / {doseMl.toFixed(1)} mL
         </p>
       </div>
-
-      {complete && (
-        <div className="animate-pulse rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-base font-semibold text-emerald-800">
-          Medication infused ✅ Total infusion time: {Number((elapsedMs / 1000).toFixed(2))} seconds
-        </div>
-      )}
 
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
@@ -450,6 +491,12 @@ export default function Home() {
   const [consentAcceptedAt, setConsentAcceptedAt] = useState<string | null>(null);
   const [consentReachedBottom, setConsentReachedBottom] = useState(false);
   const [consentError, setConsentError] = useState("");
+  const [showRunTypeMenu, setShowRunTypeMenu] = useState(false);
+  const [pendingRunType, setPendingRunType] = useState<RunType | null>(null);
+  const [activeRunType, setActiveRunType] = useState<RunType | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const [resultSaveState, setResultSaveState] = useState<ResultSaveState>(INITIAL_RESULT_SAVE_STATE);
+  const activeSaveRunIdRef = useRef<string | null>(null);
   const consentScrollRef = useRef<HTMLDivElement | null>(null);
 
   const med = MEDS[index];
@@ -458,6 +505,7 @@ export default function Home() {
   const canAdvance = infusionByMed[index]?.complete ?? false;
   const participantIdForSession = participant.participantId.trim();
   const consentAccepted = Boolean(consentAcceptedAt);
+  const activeRunLabel = activeRunType ? RUN_TYPE_LABELS[activeRunType] : "Medication Rate Simulation";
 
   const updateParticipantField = (field: keyof Participant, value: string) => {
     setParticipant((prev) => ({ ...prev, [field]: value }));
@@ -494,6 +542,22 @@ export default function Home() {
   const goToConsent = () => {
     setConsentError("");
     setScreen("consent");
+  };
+
+  const resetMedicationProgress = () => {
+    setShowRef(false);
+    setIndex(0);
+    setInfusionByMed({});
+    setReferenceOpenedByMed({});
+  };
+
+  const resetRunTracking = () => {
+    setShowRunTypeMenu(false);
+    setPendingRunType(null);
+    setActiveRunType(null);
+    setActiveRunId(null);
+    setResultSaveState(INITIAL_RESULT_SAVE_STATE);
+    activeSaveRunIdRef.current = null;
   };
 
   const continueFromConsent = () => {
@@ -559,22 +623,73 @@ export default function Home() {
     referenceOpenedByMed,
   ]);
 
-  const downloadCsv = useCallback(() => {
-    if (!exportRows.length) return;
+  const saveCompletedRun = useCallback(async () => {
+    if (!activeRunType || !activeRunId || !consentAcceptedAt || !exportRows.length) return;
+    if (activeSaveRunIdRef.current === activeRunId && resultSaveState.status !== "error") return;
 
-    const csv = rowsToCsv(exportRows);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const safeParticipantId = participant.participantId.trim().replace(/[^a-z0-9_-]+/gi, "-") || "participant";
-    anchor.href = url;
-    anchor.download = "simulation-data-" + safeParticipantId + "-" + timestamp + ".csv";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
-  }, [exportRows, participant.participantId]);
+    activeSaveRunIdRef.current = activeRunId;
+    setResultSaveState({
+      status: "saving",
+      message: "Saving this completed run to the secure study database.",
+    });
+
+    try {
+      const response = await fetch("/api/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId: activeRunId,
+          runType: activeRunType,
+          consentAcceptedAt,
+          participant,
+          rows: exportRows,
+        }),
+      });
+      const responseBody = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+        rowsAttempted?: number;
+        rowsInserted?: number;
+        duplicate?: boolean;
+        warning?: string;
+        googleSheetsSync?: {
+          configured?: boolean;
+          attempted?: boolean;
+          synced?: boolean;
+          warning?: string;
+        };
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(responseBody?.error ?? "Results could not be saved.");
+      }
+
+      const warning = responseBody?.warning ?? responseBody?.googleSheetsSync?.warning;
+      setResultSaveState({
+        status: warning ? "warning" : "saved",
+        message:
+          warning ??
+          (responseBody?.duplicate
+            ? "This run was already present in the study database, so no duplicate rows were added."
+            : "Saved to secure study database."),
+        detail:
+          typeof responseBody?.rowsInserted === "number" && typeof responseBody?.rowsAttempted === "number"
+            ? `${responseBody.rowsInserted} of ${responseBody.rowsAttempted} rows added. Admin Excel export includes database rows.`
+            : undefined,
+      });
+    } catch (error) {
+      activeSaveRunIdRef.current = null;
+      setResultSaveState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Results could not be saved. Please try again.",
+      });
+    }
+  }, [activeRunId, activeRunType, consentAcceptedAt, exportRows, participant, resultSaveState.status]);
+
+  useEffect(() => {
+    if (screen !== "done" || resultSaveState.status !== "idle") return;
+    void saveCompletedRun();
+  }, [resultSaveState.status, saveCompletedRun, screen]);
 
   const openPracticeRun = () => {
     if (!consentAccepted) {
@@ -587,10 +702,8 @@ export default function Home() {
     setParticipantErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    setShowRef(false);
-    setIndex(0);
-    setInfusionByMed({});
-    setReferenceOpenedByMed({});
+    resetMedicationProgress();
+    resetRunTracking();
     setScreen("practice");
   };
 
@@ -608,27 +721,48 @@ export default function Home() {
       return;
     }
 
-    setShowRef(false);
-    setIndex(0);
-    setInfusionByMed({});
-    setReferenceOpenedByMed({});
+    setPendingRunType(null);
+    setShowRunTypeMenu(true);
+  };
+
+  const confirmRunTypeAndStart = () => {
+    if (!pendingRunType) return;
+
+    if (!consentAccepted) {
+      setShowRunTypeMenu(false);
+      setConsentError("You must agree to the following terms to participate in this study.");
+      setScreen("consent");
+      return;
+    }
+
+    const errors = validateParticipant(participant);
+    setParticipantErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setShowRunTypeMenu(false);
+      setScreen("demographics");
+      return;
+    }
+
+    resetMedicationProgress();
+    setActiveRunType(pendingRunType);
+    setActiveRunId(createRunId(pendingRunType));
+    setResultSaveState(INITIAL_RESULT_SAVE_STATE);
+    activeSaveRunIdRef.current = null;
+    setShowRunTypeMenu(false);
+    setPendingRunType(null);
     setScreen("med");
   };
 
   const backToDemographics = () => {
-    setShowRef(false);
+    resetMedicationProgress();
+    resetRunTracking();
     setScreen("demographics");
-    setIndex(0);
-    setInfusionByMed({});
-    setReferenceOpenedByMed({});
   };
 
   const toHome = () => {
-    setShowRef(false);
+    resetMedicationProgress();
+    resetRunTracking();
     setScreen("landing");
-    setIndex(0);
-    setInfusionByMed({});
-    setReferenceOpenedByMed({});
     setParticipant(createParticipant());
     setParticipantErrors({});
     setConsentChoice(null);
@@ -645,7 +779,7 @@ export default function Home() {
             <p className="inline-flex rounded-full bg-blue-100 px-4 py-1 text-sm font-semibold text-blue-700">Medication Rate Simulation</p>
             <h1 className="mt-5 text-4xl font-black tracking-tight md:text-5xl">IV Push Medication Training</h1>
             <p className="mt-4 max-w-3xl text-lg text-zinc-600">
-              Review participant information, move through a practice run, and then begin the actual medication simulation.
+              Review participant information, move through a practice run, and then choose a training or official study sequence.
             </p>
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -659,7 +793,7 @@ export default function Home() {
               </div>
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                 <p className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Data Export</p>
-                <p className="mt-1 text-3xl font-bold">CSV / Excel</p>
+                <p className="mt-1 text-3xl font-bold">Study Database</p>
               </div>
             </div>
 
@@ -668,7 +802,7 @@ export default function Home() {
               <ol className="mt-3 space-y-2 text-base text-zinc-700">
                 <li>1. Review the informed consent form.</li>
                 <li>2. Complete the participant information page.</li>
-                <li>3. Move through the practice run and then the medication simulation.</li>
+                <li>3. Move through practice, select a run type, and complete the medication sequence.</li>
               </ol>
             </div>
 
@@ -910,9 +1044,61 @@ export default function Home() {
             <p className="mt-3 text-lg text-zinc-600">
               Participant ID: <span className="font-semibold text-zinc-900">{displayParticipantValue(participant.participantId)}</span>
             </p>
-            <p className="mt-1 text-zinc-600">You can download the collected data below and open it directly in Excel.</p>
+            <p className="mt-1 text-zinc-600">
+              {activeRunId ? `${activeRunLabel}: ${activeRunId}` : activeRunLabel}
+            </p>
+            <p className="mt-1 text-zinc-600">Completed rows are saved automatically to the secure study database.</p>
+
+            <div
+              className={
+                "mt-6 rounded-2xl border p-5 " +
+                (resultSaveState.status === "saved"
+                  ? "border-emerald-200 bg-emerald-50"
+                  : resultSaveState.status === "error" || resultSaveState.status === "warning"
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-blue-200 bg-blue-50")
+              }
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p
+                    className={
+                      "text-sm font-semibold uppercase tracking-wide " +
+                      (resultSaveState.status === "saved"
+                        ? "text-emerald-700"
+                        : resultSaveState.status === "error" || resultSaveState.status === "warning"
+                          ? "text-amber-800"
+                          : "text-blue-700")
+                    }
+                  >
+                    {resultSaveState.status === "saved"
+                      ? "Database save complete"
+                      : resultSaveState.status === "error"
+                        ? "Database save needs retry"
+                        : resultSaveState.status === "warning"
+                          ? "Database saved with warning"
+                          : "Database save in progress"}
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-zinc-900">
+                    {resultSaveState.message || "Preparing completed rows for the database."}
+                  </p>
+                  {resultSaveState.detail && <p className="mt-2 text-sm text-zinc-700">{resultSaveState.detail}</p>}
+                </div>
+                {resultSaveState.status === "error" && (
+                  <button
+                    type="button"
+                    onClick={saveCompletedRun}
+                    className="rounded-2xl bg-amber-600 px-5 py-3 text-base font-bold text-white hover:bg-amber-500"
+                  >
+                    Retry Database Save
+                  </button>
+                )}
+              </div>
+            </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <SummaryCard label="Run Type" value={activeRunLabel} />
+            <SummaryCard label="Run ID" value={activeRunId ?? "Not assigned"} />
             <SummaryCard label="Participant ID" value={displayParticipantValue(participant.participantId)} />
             <SummaryCard label="Age" value={displayParticipantValue(participant.age)} />
             <SummaryCard label="Gender" value={displayParticipantValue(participant.gender)} />
@@ -955,13 +1141,6 @@ export default function Home() {
           </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                onClick={downloadCsv}
-                disabled={!exportRows.length}
-                className="rounded-2xl bg-blue-600 px-6 py-4 text-base font-bold text-white hover:bg-blue-500 disabled:opacity-40"
-              >
-                Download CSV for Excel
-              </button>
               <button onClick={toHome} className="rounded-2xl bg-zinc-900 px-6 py-4 text-base font-bold text-white hover:bg-zinc-700">
                 Back to Home
               </button>
@@ -973,38 +1152,29 @@ export default function Home() {
   }
 
   const isPractice = screen === "practice";
+  const modeAccentClass = activeRunType === "training" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700";
+  const panelBorderClass = activeRunType === "training" ? "border-amber-200" : "border-zinc-200";
+  const simulationMainClass = "min-h-screen bg-zinc-100 px-3 py-3 xl:min-h-screen xl:overflow-visible";
+  const simulationGridClass = "mx-auto grid max-w-[1900px] gap-3 xl:grid-cols-[minmax(0,1fr)_560px] xl:[zoom:0.8]";
 
   return (
-    <main className={`${isPractice ? "bg-gradient-to-b from-amber-50 to-zinc-100" : "bg-zinc-100"} min-h-screen px-4 py-4 text-zinc-900`}>
+    <main className={`${simulationMainClass} text-zinc-900`}>
       <div className="mx-auto max-w-[1580px]">
         <ParticipantIdTab participantId={participantIdForSession} />
       </div>
-      <div className="mx-auto grid max-w-[1580px] gap-4 xl:grid-cols-[1fr_560px]">
-        <section className={`rounded-3xl border bg-white p-6 shadow-xl md:p-8 ${isPractice ? "border-amber-200" : "border-zinc-200"}`}>
+      <div className={simulationGridClass}>
+        <section className={`rounded-3xl border bg-white p-6 shadow-xl md:p-8 ${panelBorderClass}`}>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className={`inline-flex rounded-full px-4 py-1 text-sm font-semibold ${isPractice ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
-                {isPractice ? "Practice Mode" : "Medication Rate Simulation"}
+              <p className={`inline-flex rounded-full px-4 py-1 text-sm font-semibold ${modeAccentClass}`}>
+                {isPractice ? "Practice Run" : activeRunLabel}
               </p>
               <h1 className="mt-5 text-4xl font-black">IV Medication Order</h1>
             </div>
-            <span className={`rounded-full px-4 py-2 text-base font-bold ${isPractice ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
-              {isPractice ? "Practice Run" : progress}
+            <span className={`rounded-full px-4 py-2 text-base font-bold ${modeAccentClass}`}>
+              {isPractice ? "Practice Run" : `${activeRunLabel} - ${progress}`}
             </span>
           </div>
-
-          <p className="mb-4 text-base font-semibold text-zinc-700">
-            Compliance target: complete in at least {formatSeconds(activeMed.requiredSeconds)}.
-          </p>
-
-          {isPractice && (
-            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-              <p className="text-lg font-bold text-zinc-900">This practice screen uses sample medication information.</p>
-              <p className="mt-2 text-base text-zinc-700">
-                Nothing from the practice run is included in the exported study data, and the actual simulation will begin fresh.
-              </p>
-            </div>
-          )}
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
@@ -1034,15 +1204,6 @@ export default function Home() {
             <button onClick={openDrugReference} className="rounded-2xl border border-emerald-300 bg-emerald-50 px-6 py-4 text-lg font-bold text-emerald-800 hover:bg-emerald-100">
               Additional Drug Information
             </button>
-            {!isPractice && (
-              <button
-                onClick={downloadCsv}
-                disabled={!exportRows.length}
-                className="rounded-2xl border border-blue-300 bg-blue-50 px-6 py-4 text-lg font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-40"
-              >
-                Download CSV
-              </button>
-            )}
             <button
               onClick={() => {
                 if (isPractice || index === 0) backToDemographics();
@@ -1055,7 +1216,7 @@ export default function Home() {
             </button>
             {isPractice ? (
               <button onClick={startActualSimulation} className="rounded-2xl bg-blue-600 px-6 py-4 text-lg font-bold text-white hover:bg-blue-500">
-                Start Actual Simulation
+                Start Simulation
               </button>
             ) : (
               <button
@@ -1072,29 +1233,81 @@ export default function Home() {
             )}
           </div>
           {!isPractice && !canAdvance && <p className="mt-2 text-base font-semibold text-amber-700">Complete syringe infusion to continue.</p>}
-          {!isPractice && canAdvance && infusionByMed[index]?.elapsedSeconds !== null && (
-            <p
-              className={
-                complianceForElapsed(infusionByMed[index].elapsedSeconds ?? 0, activeMed.requiredSeconds) === "In compliance"
-                  ? "mt-3 text-base font-semibold text-emerald-700"
-                  : "mt-3 text-base font-semibold text-rose-700"
-              }
-            >
-              {complianceForElapsed(infusionByMed[index].elapsedSeconds ?? 0, activeMed.requiredSeconds)}:{" "}
-              {Number((infusionByMed[index].elapsedSeconds ?? 0).toFixed(2))} seconds (target {activeMed.requiredSeconds} seconds or more).
-            </p>
-          )}
-          {isPractice && (
-            <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-base text-zinc-700">
-              Use this practice run to get comfortable with the syringe controls and timer before beginning the actual medication sequence.
-            </div>
-          )}
         </section>
 
         <aside>
-          <InfusionPanel key={isPractice ? "practice" : index} orderedAdminDose={activeMed.orderedAdminDose} onChange={isPractice ? handlePracticeChange : handleInfusionChange} />
+          <InfusionPanel
+            key={isPractice ? "practice" : index}
+            orderedAdminDose={activeMed.orderedAdminDose}
+            requiredSeconds={activeMed.requiredSeconds}
+            onChange={isPractice ? handlePracticeChange : handleInfusionChange}
+          />
         </aside>
       </div>
+
+      {showRunTypeMenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/55 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="run-type-dialog-title"
+            className="w-full max-w-3xl rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl md:p-8"
+          >
+            <p className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Save Destination</p>
+            <h2 id="run-type-dialog-title" className="mt-2 text-3xl font-black text-zinc-900">
+              Select run type
+            </h2>
+            <p className="mt-3 max-w-2xl text-base text-zinc-600">
+              This choice is locked for the full medication sequence and determines which worksheet receives the completed rows.
+            </p>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <RunTypeOptionCard
+                label={RUN_TYPE_LABELS.training}
+                description="Practice-quality sequence saved separately from official study data."
+                selected={pendingRunType === "training"}
+                tone="training"
+                onClick={() => setPendingRunType("training")}
+              />
+              <RunTypeOptionCard
+                label={RUN_TYPE_LABELS.official}
+                description="Research sequence saved to the official study worksheet."
+                selected={pendingRunType === "official"}
+                tone="official"
+                onClick={() => setPendingRunType("official")}
+              />
+            </div>
+
+            <div className="mt-7 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRunTypeMenu(false);
+                  setPendingRunType(null);
+                }}
+                className="rounded-2xl bg-zinc-200 px-5 py-3 text-base font-bold text-zinc-900 hover:bg-zinc-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRunTypeAndStart}
+                disabled={!pendingRunType}
+                className={
+                  "rounded-2xl px-6 py-3 text-base font-bold text-white transition disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 " +
+                  (pendingRunType === "training"
+                    ? "bg-amber-600 hover:bg-amber-500"
+                    : pendingRunType === "official"
+                      ? "bg-blue-600 hover:bg-blue-500"
+                      : "bg-zinc-300")
+                }
+              >
+                Start Simulation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showRef && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
@@ -1116,8 +1329,8 @@ function ParticipantIdTab({ participantId }: { participantId: string }) {
   if (!participantId) return null;
 
   return (
-    <div className="mb-4 flex justify-end">
-      <div className="rounded-b-2xl rounded-t-md border border-blue-200 bg-white px-4 py-3 shadow-sm">
+    <div className="absolute right-3 top-0 z-40 flex justify-end sm:right-5">
+      <div className="rounded-b-2xl border border-t-0 border-blue-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Participant ID</p>
         <p className="text-lg font-black text-zinc-900">{participantId}</p>
       </div>
@@ -1160,6 +1373,47 @@ function ConsentChoiceCard({
       <span>
         <span className="block text-base font-bold text-zinc-900">{label}</span>
         <span className="mt-1 block text-sm text-zinc-600">{description}</span>
+      </span>
+    </button>
+  );
+}
+
+function RunTypeOptionCard({
+  label,
+  description,
+  selected,
+  tone,
+  onClick,
+}: {
+  label: string;
+  description: string;
+  selected: boolean;
+  tone: RunType;
+  onClick: () => void;
+}) {
+  const selectedClasses =
+    tone === "official" ? "border-blue-500 bg-blue-50 ring-blue-200" : "border-amber-500 bg-amber-50 ring-amber-200";
+  const idleClasses =
+    tone === "official"
+      ? "border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50/60"
+      : "border-zinc-200 bg-white hover:border-amber-300 hover:bg-amber-50/70";
+  const checkClasses = selected
+    ? tone === "official"
+      ? "border-blue-600 bg-blue-600 text-white"
+      : "border-amber-600 bg-amber-600 text-white"
+    : "border-zinc-300 bg-white text-transparent";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`flex min-h-36 items-start gap-4 rounded-2xl border p-5 text-left ring-4 ring-transparent transition ${selected ? selectedClasses : idleClasses}`}
+    >
+      <span className={`mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-base font-black ${checkClasses}`}>✓</span>
+      <span>
+        <span className="block text-xl font-black text-zinc-900">{label}</span>
+        <span className="mt-2 block text-base leading-6 text-zinc-600">{description}</span>
       </span>
     </button>
   );
